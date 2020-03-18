@@ -34,4 +34,5 @@
 *.exe
 *.out
 *.app
+p2p
 test-*
