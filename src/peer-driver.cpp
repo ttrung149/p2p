@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include "picosha2.h"
+#include "peer.h"
 
 std::string hash1(std::string fileName)
 {
@@ -18,7 +19,9 @@ std::string hash1(std::string fileName)
 }
 
 int main() {
-    std::cout << hash1("main") << std::endl;   
+    //std::cout << hash1("main") << std::endl;   
     
+    PeerServer peer1 = PeerServer("peer1", 9065);
+
     return 0;
 }

@@ -34,5 +34,6 @@
 *.exe
 *.out
 *.app
-p2p
+peer
+index
 test-*

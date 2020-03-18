@@ -10,7 +10,7 @@ RM          = rm -f
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 clean: 
-	rm -rf src/*.o tests/*.o core* main *~ tests/test-*
+	rm -rf src/*.o tests/*.o core* peer *~ tests/test-*
 
-main: src/main.o
-	$(CC) $(CFLAGS) -o main src/main.o
+peer: src/peer-driver.o src/peer.o
+	$(CC) $(CFLAGS) -o peer src/peer-driver.o src/peer.o
