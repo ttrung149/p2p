@@ -1,0 +1,78 @@
+\documentclass[12pt]{article}
+\usepackage{epsfig}
+\usepackage{amsmath}
+\usepackage{listings}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{tikz}
+ 
+\usepackage{amsthm}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{definition}[theorem]{Definition}
+
+
+\newlength{\toppush}
+\setlength{\toppush}{2\headheight}
+\addtolength{\toppush}{\headsep}
+
+\def\subjnum{Comp 112}
+\def\subjname{Networks}
+
+
+\def\doheading#1#2#3{\vfill\eject\vspace*{-\toppush}%
+\vbox{\hbox to\textwidth{{\bf} \subjnum: \subjname \hfil Prof. Dogar}%
+\hbox to\textwidth{{\bf} Tufts University, Spring 2020\hfil#3\strut}%
+\hrule}}
+
+
+\newcommand{\htitle}[1]{\vspace*{1.25ex plus 1ex minus 0ex}%
+\begin{center}
+{\large\bf #1}
+\end{center}} 
+
+\begin{document}
+\doheading{2}{title}{Trung Truong}
+\htitle{Final Project Proposal} 
+
+\begin{enumerate}
+\item {\underline{Proposed idea}} \\
+For the final project, I'm planning to implement a "Napster-like" peer-to-peer (p2p) file transferring protocol. The final deliverable will include a working index server that logs and keeps track of seeders and peers, and client nodes that can deliver content to one another in a p2p manner.
+
+\item \underline{Invariances}
+\begin{enumerate}
+    \item The index server must know every registered file segment and machine addresses for such segment.
+    \item The index server must be able to handle if a peer is down.
+    \item The peer nodes must be in charged of file transferring.
+\end{enumerate}
+
+\item {\underline{Architecture}} \\
+The project will include the following components:
+\begin{itemize}
+    \item Peer nodes:
+    \begin{enumerate}
+        \item To initiate file transferring, a "seeder" peer will register a file name to be downloaded, the SHA-256 hash of each file segment, and the IP addresses of the machines containing such segment to the index server.
+        \item To request a file, a "leecher" peer will request the file name to the index server, and the index server will respond with the segment IDs and the IP address of the machines containing the requested file segments. The "leecher" peer can proceed to communicate with the "seeder" peers to request each file segment. Once the "leecher" received the correct file segment (which can be compared with the original hash), it will be qualified to be a "seeder" for such segment in other downloads in the future.
+    \end{enumerate}
+    \item Index server:
+    \begin{enumerate}
+        \item The index server has a table of file names. For each file, it contains a list of segment IDs, which is the SHA-256 hash of the file segment, and a list of IP addresses of machine containing such segment. Once requested, the server will respond to a peer node with a message containing the list of segment ID's and a randomized machine for each segment, and the peer can proceed requesting each segment from respective machine.
+        \item The index server also has a cache layer for faster response time. A logging module will also be implemented to record requests.
+    \end{enumerate}
+\end{itemize}
+
+\item {\underline{Tools}} \\
+This projected will be implemented in C++. Additional library will be included to perform SHA-256.
+
+\item \underline{Timeline}
+\begin{itemize}
+\item 3/27 - Checkpoint 1: Working prototype of index server
+\item 4/13 - Checkpoint 2: Working prototype of peer node
+\item 4/27 - Final Project Due: Finished write-up
+\item 4/29 - Final Project Demos/Presentations
+
+\end{itemize}
+
+\end{enumerate}
+
+\end{document}
