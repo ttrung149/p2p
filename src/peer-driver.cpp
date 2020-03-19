@@ -2,8 +2,12 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <csignal>
+
 #include "picosha2.h"
 #include "peer.h"
+
+static PeerServer peer;
 
 std::string hash1(std::string fileName)
 {
@@ -18,10 +22,20 @@ std::string hash1(std::string fileName)
     return hexHash;
 }
 
+void signalHandler(int signum) {
+    std::cout << "Interrupt signal (" << signum << ") received.\n";
+
+   // cleanup and close up stuff here  
+   // terminate program
+    peer.register_file("130.64.23.182", 9065, "file.txt");
+
+    exit(signum);
+}
+
 int main() {
     //std::cout << hash1("main") << std::endl;   
-    
-    PeerServer peer1 = PeerServer("peer1", 9065);
+    signal(SIGINT, signalHandler);   
+    peer.start_server("peer1", 9065);
 
     return 0;
 }
