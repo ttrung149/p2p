@@ -22,6 +22,8 @@
 #ifndef TCP_H_
 #define TCP_H_
 
+#define TCP_BUF_SZ 1024
+
 class TCP_Server {
     public:
         TCP_Server(int portno);
@@ -37,12 +39,19 @@ class TCP_Server {
         int addr_len;
 };
 
-// class TCP_Client {
-//     public:
+class TCP_Client {
+    public:
+        TCP_Client();
+        void connect_to_server(std::string host, int portno);
+        int read_from_sock(char buffer[]);
+        int write_to_sock(std::string msg);
+        void close_sock();
 
-//     private:
-
-// };
+    private:
+        int client_fd;
+        struct sockaddr_in server_addr;
+        struct hostent *server;
+};
 
 #endif
 
