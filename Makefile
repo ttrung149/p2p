@@ -12,5 +12,5 @@ RM          = rm -f
 clean: 
 	rm -rf src/*.o tests/*.o core* peer *~ tests/test-*
 
-peer: src/peer-driver.o src/peer.o
-	$(CC) $(CFLAGS) -o peer src/peer-driver.o src/peer.o
+peer: src/peer-driver.o src/peer.o src/tcp.o
+	$(CC) $(CFLAGS) -o peer src/peer-driver.o src/peer.o src/tcp.o
