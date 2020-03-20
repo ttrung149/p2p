@@ -24,84 +24,29 @@ void Peer::start_server(std::string name, int port)
     while (true) 
     {
         char buffer[1024] = {0};
-
-        std::cout << "Server loop" << std::endl;
         peer_server.accept_sock();
 
         peer_server.read_from_sock(buffer);
-        std::cout << "Buffer:" << buffer << std::endl;   
+        std::cout << "Buffer: " << buffer << std::endl;   
 
         peer_server.write_to_sock("Hello from peer server\n");
         peer_server.close_sock();
     }
 }
 
-/* Function: register_file 
- * Params:
- *
- **/
 void Peer::register_file(std::string idx_host,
                                     int idx_port, std::string src)
 {
-    int client_fd;
-    struct sockaddr_in idx_server_addr;
-    struct hostent *idx_server;
-    char buf[1024] = "Hello from peer client";
+    TCP_Client peer_client = TCP_Client();
+    
+    peer_client.connect_to_server(idx_host, idx_port);
+    peer_client.write_to_sock("Hello from peer client\n");
 
-    index_server_host = idx_host;
-    index_server_port = idx_port;
+    char buffer[1024] = {0};
+    peer_client.read_from_sock(buffer);
 
-    /* Create the socket */
-    client_fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (client_fd < 0) 
-    {
-        perror("PEER CLIENT ERR: socket");
-    } 
-
-    /* Get the server's DNS entry */
-    idx_server = gethostbyname(idx_host.data());
-    if (idx_server == NULL) 
-    {
-        std::cerr << "PEER CLIENT ERR: cannot connect to host '" << idx_host
-                  << "'\n'"; 
-        exit(EXIT_FAILURE);
-    }
-
-    /* Build the server's Internet address */
-    bzero((char *) &idx_server_addr, sizeof(idx_server_addr));
-    idx_server_addr.sin_family = AF_INET;
-    bcopy((char *) idx_server->h_addr, 
-          (char *) &idx_server_addr.sin_addr.s_addr, idx_server->h_length);
-    idx_server_addr.sin_port = htons(idx_port);
-
-    /* Connect: create a connection with the server */
-    if (connect(client_fd, (struct sockaddr *) &idx_server_addr, 
-                                                sizeof(idx_server_addr)) < 0) 
-    {
-        perror("PEER CLIENT ERR: connect");
-        exit(EXIT_FAILURE);
-    }
-
-    /* Send message to the server */
-    int bytes_sent = write(client_fd, buf, strlen(buf));
-    if (bytes_sent < 0)
-    {
-        perror("PEER CLIENT ERR: writing to socket");
-        exit(EXIT_FAILURE);
-    } 
-
-    /* Print the server's reply */
-    bzero(buf, 1024);
-    int bytes_read = read(client_fd, buf, 1024);
-    if (bytes_read < 0)
-    {
-        perror("PEER CLIENT ERR: reading from socket");
-        exit(EXIT_FAILURE);
-    }
-
-    std::cout << "Response from server: " << buf << std::endl;
-    close(client_fd);
+    std::cout << "Response from server: " << buffer << std::endl;
+    peer_client.close_sock();
 
     (void) src;
 }
-
