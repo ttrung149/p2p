@@ -1,19 +1,11 @@
-#include <fstream>
-#include <iostream>
-#include <unistd.h> 
-#include <sys/socket.h> 
-#include <sys/types.h>
-#include <stdlib.h> 
-#include <netinet/in.h> 
-#include <string.h>
-#include <netdb.h> 
+#include "tcp.h"
 
 #ifndef PEER_H_
 #define PEER_H_
 
-class PeerServer {
+class Peer {
     public:
-        PeerServer();
+        Peer();
         void start_server(std::string name, int port);
         
         void register_file(std::string idx_host, int idx_port, std::string src);
@@ -21,7 +13,7 @@ class PeerServer {
         
     private:
         std::string peer_name;
-        int peer_port;
+        // TCP_Server peer_server(port);
 
         std::string index_server_host;
         int index_server_port;
