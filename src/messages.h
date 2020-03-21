@@ -8,7 +8,18 @@
  *  peer node and index server using TCP module.  
  *  
  *==========================================================================*/
+#include <cstring>
 #include <string>
+#include <assert.h>
+#include <arpa/inet.h>
+
+/*===== Uncomment for debugging =====*/
+#define DEBUG_MESSAGE
+/*===================================*/
+
+#ifdef DEBUG_MESSAGE
+#include <iostream>
+#endif
 
 #ifndef MESSAGES_H_
 #define MESSAGES_H_
@@ -34,7 +45,7 @@ typedef struct __attribute__((__packed__)) register_msg {
     unsigned int file_size;
     char file_name[20];
     char seeder_ip[16];
-    char seeder_portno[6];
+    unsigned short seeder_portno;
     char file_hash[64];
 } RegisterMsg;
 
@@ -58,14 +69,14 @@ typedef struct __attribute__((__packed__)) req_idx_msg {
     unsigned short type;
     char file_name[20];
     char leecher_ip[16];
-    char leecher_portno[6];
+    unsigned short leecher_portno;
 } ReqIdxMsg;
 
 /* Index server response - found file message */
 typedef struct __attribute__((__packed__)) file_found_msg {
     unsigned short type;
     char seeder_ip[16];
-    char seeder_portno[6];
+    unsigned short seeder_portno;
 } FileFoundMsg;
 
 /* Index server response - error file not found message */
@@ -85,30 +96,46 @@ typedef struct __attribute__((__packed__)) report_msg {
     unsigned int file_size;
     char file_name[20];
     char leecher_ip[16];
-    char leecher_portno[6];
+    unsigned short leecher_portno;
     char seeder_ip[16];
-    char seeder_portno[6];
+    unsigned short seeder_portno;
 } ReportMsg;
 
 /*===========================================================================
  * Message structs function prototypes
  *==========================================================================*/
+
+/* Creating messages */
 RegisterMsg *create_register_msg(message_type, int, std::string, 
-                        std::string, std::string, std::string);
+                        std::string, unsigned short, std::string);
+
+RegisterConfirmMsg *create_reg_confirm_msg(message_type, int, std::string);
 
 RegisterAckMsg *create_register_ack_msg(message_type, int, std::string, 
                         std::string);
 
 ReqIdxMsg *create_reqidx_msg(message_type, std::string, std::string, 
-                        std::string);
+                        unsigned short);
 
-FileFoundMsg *create_file_found_msg(message_type, std::string, std::string);
+FileFoundMsg *create_file_found_msg(message_type, std::string, unsigned short);
 
 ErrFileNotFoundMsg *create_err_file_not_found_msg(message_type);
 
 ReqPeerMsg *create_reqpeer_msg(message_type, std::string);
 
-ReportMsg *create_report_msg(message_type, int, std::string, 
-                        std::string, std::string, std::string, std::string);
+ReportMsg *create_report_msg(message_type, int, std::string, std::string, 
+                        unsigned short, std::string, unsigned short);
+
+void *create_data_msg(message_type, int, char *);
+
+/* Parsing messages */
+void parse_register_msg(char [], RegisterMsg &);
+void parse_register_confirm_msg(char [], RegisterConfirmMsg &);
+void parse_register_ack_msg(char [], RegisterAckMsg &);
+void parse_reqidx_msg(char [], ReqIdxMsg &);
+void parse_file_found_msg(char [], FileFoundMsg &);
+void parse_err_file_not_found_msg(char [], ErrFileNotFoundMsg &);
+void parse_reqpeer_msg(char [], ReqPeerMsg &);
+void parse_report_msg(char [], ReportMsg &);
 
 #endif

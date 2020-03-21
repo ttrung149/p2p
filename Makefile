@@ -10,7 +10,10 @@ RM          = rm -f
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 clean: 
-	rm -rf src/*.o tests/*.o core* peer *~ tests/test-*
+	rm -rf src/*.o tests/*.o core* peer *~ test_*
 
 peer: src/peer-driver.o src/peer.o src/tcp.o
 	$(CC) $(CFLAGS) -o peer src/peer-driver.o src/peer.o src/tcp.o
+
+test_messages: tests/test-messages.o src/messages.o
+	$(CC) $(CFLAGS) -o test_messages tests/test-messages.o src/messages.o
