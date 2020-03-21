@@ -106,27 +106,18 @@ typedef struct __attribute__((__packed__)) report_msg {
  *==========================================================================*/
 
 /* Creating messages */
-RegisterMsg *create_register_msg(message_type, int, std::string, 
-                        std::string, unsigned short, std::string);
+RegisterMsg *create_register_msg(int, std::string, std::string, unsigned short,
+                                                std::string);
+RegisterConfirmMsg *create_reg_confirm_msg(int, std::string);
+RegisterAckMsg *create_register_ack_msg(int, std::string, std::string);
+ReqIdxMsg *create_reqidx_msg(std::string, std::string, unsigned short);
+FileFoundMsg *create_file_found_msg(std::string, unsigned short);
+ErrFileNotFoundMsg *create_err_file_not_found_msg();
+ReqPeerMsg *create_reqpeer_msg(std::string);
 
-RegisterConfirmMsg *create_reg_confirm_msg(message_type, int, std::string);
-
-RegisterAckMsg *create_register_ack_msg(message_type, int, std::string, 
-                        std::string);
-
-ReqIdxMsg *create_reqidx_msg(message_type, std::string, std::string, 
-                        unsigned short);
-
-FileFoundMsg *create_file_found_msg(message_type, std::string, unsigned short);
-
-ErrFileNotFoundMsg *create_err_file_not_found_msg(message_type);
-
-ReqPeerMsg *create_reqpeer_msg(message_type, std::string);
-
-ReportMsg *create_report_msg(message_type, int, std::string, std::string, 
-                        unsigned short, std::string, unsigned short);
-
-void *create_data_msg(message_type, int, char *);
+ReportMsg *create_report_msg(int, std::string, std::string, unsigned short, 
+                                                std::string, unsigned short);
+char *create_data_msg(int, char *);
 
 /* Parsing messages */
 void parse_register_msg(char [], RegisterMsg &);
