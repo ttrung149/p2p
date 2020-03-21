@@ -73,7 +73,7 @@ ReqPeerMsg *create_reqpeer_msg(std::string file_name)
 
 /**
  * Create data message that delivers the requested file
- * @param file_sz size of file
+ * @param file_sz size of file. This value must be equal to size of data
  * @param data pointer to data being delivered
  * @returns Pointer to newly allocated data message
  */
@@ -82,7 +82,7 @@ char *create_data_msg(int file_sz, char *data)
     // Allocate memory for message type, file size, and data
     char *msg = (char *)malloc(file_sz + 6);
     assert(msg);
-    unsigned short type = (unsigned short) htons(REQ_PEER);
+    unsigned short type = (unsigned short) htons(DATA);
     memcpy(msg, &type, sizeof(unsigned short));
     int _file_sz = htonl(file_sz);
     memcpy(msg + 2, &_file_sz, sizeof(int));
@@ -95,9 +95,9 @@ char *create_data_msg(int file_sz, char *data)
 /**
  * Parse register message 
  * @param[in] buffer Buffer array containg register message. Buffer size 
- * must be bigger than the size of RegisterMsg struct.
+ * must be bigger than or equal to the size of RegisterMsg struct.
  * @param[out] msg Passed-by-reference value of RegisterMsg struct. The buffer
- * will be parsed and populated in this struct
+ * will be parsed and populated in this struct.
  * @returns void
  */
 void parse_register_msg(char buffer[], RegisterMsg &msg) 
@@ -105,7 +105,6 @@ void parse_register_msg(char buffer[], RegisterMsg &msg)
     char type_buffer[2];
     memcpy(type_buffer, buffer, 2);
     msg.type = (message_type) ntohs(*(unsigned short *)(type_buffer));
-
 
     char file_sz_buffer[4];
     memcpy(file_sz_buffer, buffer + 2, 4);
@@ -136,7 +135,7 @@ void parse_register_msg(char buffer[], RegisterMsg &msg)
 /**
  * Parse ErrFileNotFound message
  * @param[in] buffer Buffer array containg error message. Buffer size must
- * be bigger than the size of ErrFileNotFoundMsg struct.
+ * be bigger than or equal to the size of ErrFileNotFoundMsg struct.
  * @param[out] msg Passed-by-reference value of ErrFileNotFoundMsg struct. 
  * The buffer will be parsed and populated in this struct.
  * @returns void
@@ -152,5 +151,59 @@ void parse_err_file_not_found_msg(char buffer[], ErrFileNotFoundMsg &msg)
               << "\n\tParsing ERR_FILE_NOT_FOUND"
               << "\n======================================"
               << "\nType: " << msg.type << std::endl;
+    #endif
+}
+
+/**
+ * Parse request peer message
+ * @param[in] buffer Buffer array containg register message. Buffer size 
+ * must be bigger than or equal to the size of ReqPeerMsg struct.
+ * @param[out] msg Passed-by-reference value of ReqPeerMsg struct. The buffer
+ * will be parsed and populated in this struct.
+ * @returns void
+ */
+void parse_reqpeer_msg(char buffer[], ReqPeerMsg &msg)
+{
+    char type_buffer[2];
+    memcpy(type_buffer, buffer, 2);
+    msg.type = (message_type) ntohs(*(unsigned short *)(type_buffer));
+    strncpy(msg.file_name, buffer + 2, 20);
+
+    #ifdef DEBUG_MESSAGE
+    std::cout << "\n======================================"
+              << "\n\tParsing REQ_PEER_MSG"
+              << "\n======================================"
+              << "\nType: "         << msg.type
+              << "\nFile name: "    << msg.file_name << std::endl;
+    #endif
+}
+
+/**
+ * Parse data message
+ * @param[in] buffer Buffer array containg data message. Buffer size 
+ * must be bigger than or equal to the size of data message.
+ * @param[out] msg Passed-by-reference value of DataMsg struct. The buffer
+ * will be parsed and populated in this struct.
+ * @returns void
+ */
+void parse_data_msg(char buffer[], DataMsg &msg)
+{
+    char type_buffer[2];
+    memcpy(type_buffer, buffer, 2);
+    msg.type = (message_type) ntohs(*(unsigned short *)(type_buffer));
+
+    char file_sz_buffer[4];
+    memcpy(file_sz_buffer, buffer + 2, 4);
+    msg.file_size = ntohl(*(unsigned int *)(file_sz_buffer));
+
+    msg.data = buffer + 6;
+
+    #ifdef DEBUG_MESSAGE
+    std::cout << "\n======================================"
+              << "\n\tParsing DATA_MSG"
+              << "\n======================================"
+              << "\nType: "         << msg.type
+              << "\nFile size: "    << msg.file_size 
+              << "\nData: "         << msg.data << std::endl;
     #endif
 }

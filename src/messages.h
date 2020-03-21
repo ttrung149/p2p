@@ -101,6 +101,12 @@ typedef struct __attribute__((__packed__)) report_msg {
     unsigned short seeder_portno;
 } ReportMsg;
 
+/* Data message struct */
+typedef struct data_msg {
+    unsigned short type;
+    unsigned int file_size;
+    char *data;
+} DataMsg;
 /*===========================================================================
  * Message structs function prototypes
  *==========================================================================*/
@@ -128,5 +134,6 @@ void parse_file_found_msg(char [], FileFoundMsg &);
 void parse_err_file_not_found_msg(char [], ErrFileNotFoundMsg &);
 void parse_reqpeer_msg(char [], ReqPeerMsg &);
 void parse_report_msg(char [], ReportMsg &);
+void parse_data_msg(char [], DataMsg &);
 
 #endif
