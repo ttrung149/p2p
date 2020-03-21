@@ -3,7 +3,7 @@
  *
  *  File name: peer.cpp
  *
- *  Description: Implementation of the PeerServer class defined in `peer.h`.
+ *  Description: Implementation of the PeerServer class declared in `peer.h`.
  *  This class will be used in the `peer-driver.cpp` source file to run the
  *  peer node server.
  *  

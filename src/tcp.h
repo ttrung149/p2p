@@ -8,7 +8,6 @@
  *  modules to make TCP connection. 
  *  
  *==========================================================================*/
-
 #include <fstream>
 #include <iostream>
 #include <unistd.h> 
@@ -38,7 +37,6 @@ class TCP_Server {
         int opt = 1;
         int addr_len;
 };
-
 class TCP_Client {
     public:
         TCP_Client();
