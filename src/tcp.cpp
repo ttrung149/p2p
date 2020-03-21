@@ -17,14 +17,16 @@ TCP_Select_Server::TCP_Select_Server(int _num_clients, int portno)
 {
     num_clients = _num_clients;
 
+    SockData init_sockdata = {0, 0, ""};
     /* Initialize client socket descriptor vector */
     if (num_clients < TCP_MAX_NUM_CLIENTS)
     {
-        client_sock_fds = std::vector<int>(num_clients, 0);
+        client_sock_fds = std::vector<SockData>(num_clients, init_sockdata);
     }
     else
     {
-        client_sock_fds = std::vector<int>(TCP_MAX_NUM_CLIENTS, 0);
+        client_sock_fds 
+            = std::vector<SockData>(TCP_MAX_NUM_CLIENTS, init_sockdata);
     }
 
     /* Create a master socket */
@@ -72,9 +74,9 @@ void TCP_Select_Server::monitor()
     int max_sd = server_fd;
         
     /* Add child sockets to set */
-    for (int i = 0; i < num_clients; i++) 
+    for (auto &socket : client_sock_fds) 
     { 
-        int sd = client_sock_fds[i];
+        int sd = socket.sock_fd;
         if(sd > 0) FD_SET(sd, &read_fds);
         if(sd > max_sd) max_sd = sd;
     } 
@@ -98,14 +100,13 @@ void TCP_Select_Server::add_sock()
         {
             perror("TCP SELECT SERVER ERR: accept"); 
             throw FAILURE_ACCEPT;
-        } 
-
-        std::cout << "New Socket: " << new_socket << "\n";
+        }
     
         /* Add new socket to vector of client sockets */
-        for (int i = 0; i < num_clients; i++) { 
-            if (client_sock_fds[i] == 0) {
-                client_sock_fds[i] = new_socket; 
+        for (auto &socket : client_sock_fds)
+        { 
+            if (socket.sock_fd == 0) {
+                socket.sock_fd = new_socket; 
                 break;
             }
         } 
@@ -117,7 +118,7 @@ bool TCP_Select_Server::is_socket_set(int sock_fd)
     return FD_ISSET(sock_fd, &read_fds);
 }
 
-std::vector<int> *TCP_Select_Server::get_client_sock_fds()
+std::vector<SockData> *TCP_Select_Server::get_client_sock_fds()
 {
     return &client_sock_fds;
 }
@@ -233,7 +234,6 @@ void TCP_Server::close_sock()
 /*===========================================================================
  * TCP client implementation
  *==========================================================================*/
-
 TCP_Client::TCP_Client()
 {
 }
@@ -272,7 +272,6 @@ void TCP_Client::connect_to_server(std::string host, int portno)
         throw FAILURE_CREATE_CONNECTION;
     }
 }
-
 
 int TCP_Client::write_to_sock(char *msg, int size) 
 {

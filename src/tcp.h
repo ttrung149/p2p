@@ -43,6 +43,12 @@ enum TCP_Exceptions {
 };
 
 /* TCP_Select_Server class */
+typedef struct socket_data {
+    int sock_fd;
+    int bytes_read;
+    char buffer[TCP_BUF_SZ];
+} SockData;
+
 class TCP_Select_Server 
 {
     public:
@@ -55,12 +61,12 @@ class TCP_Select_Server
         bool is_socket_set(int sock_fd);
 
         /* Getters */
-        std::vector<int> *get_client_sock_fds();
+        std::vector<SockData> *get_client_sock_fds();
 
     private:
         int server_fd;
         int num_clients;
-        std::vector<int> client_sock_fds;
+        std::vector<SockData> client_sock_fds;
         struct sockaddr_in server_address;
         int opt = 1;
         int addr_len;
