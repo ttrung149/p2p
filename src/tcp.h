@@ -27,7 +27,7 @@
 
 /* Constants */
 const int TCP_BUF_SZ = 1024;
-const int TCP_MAX_NUM_CLIENTS = 50;
+const int TCP_MAX_NUM_CLIENTS = 20;
 
 enum TCP_Exceptions {
     FAILURE_SETSOCKOPT,

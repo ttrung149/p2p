@@ -17,7 +17,7 @@ TCP_Select_Server::TCP_Select_Server(int _num_clients, int portno)
 {
     num_clients = _num_clients;
 
-    SockData init_sockdata = {0, 0, ""};
+    SockData init_sockdata = {0, 0, {0}};
     /* Initialize client socket descriptor vector */
     if (num_clients < TCP_MAX_NUM_CLIENTS)
     {
