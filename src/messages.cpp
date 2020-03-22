@@ -57,16 +57,23 @@ ErrFileNotFoundMsg *create_err_file_not_found_msg()
 /**
  * Create RequestPeer message
  * @param file_name name of file being requested from peer
+ * @param leecher_ip leecher IP address
+ * @param leecher_port leecher IP port
  * @returns Pointer to newly allocated ErrFileNotFoundMsg struct
  */
-ReqPeerMsg *create_reqpeer_msg(std::string file_name)
+ReqPeerMsg *create_reqpeer_msg(std::string file_name, std::string leecher_ip,
+                                            unsigned short leecher_portno)
 {
     ReqPeerMsg *msg = (ReqPeerMsg *)malloc(sizeof(ReqPeerMsg));
     assert(msg);
 
     msg->type = (unsigned short) htons(REQ_PEER);
     bzero(msg->file_name, 20);
-    strncpy(msg->file_name, file_name.data(), 20);  
+    strncpy(msg->file_name, file_name.data(), 20);
+
+    bzero(msg->leecher_ip, 16);
+    strncpy(msg->leecher_ip, leecher_ip.data(), 16);
+    msg->leecher_portno = (unsigned short) htons(leecher_portno);
 
     return msg;
 }
@@ -168,13 +175,20 @@ void parse_reqpeer_msg(char buffer[], ReqPeerMsg &msg)
     memcpy(type_buffer, buffer, 2);
     msg.type = (message_type) ntohs(*(unsigned short *)(type_buffer));
     strncpy(msg.file_name, buffer + 2, 20);
+    strncpy(msg.leecher_ip, buffer + 22, 16);
+
+    char portno_buffer[2];
+    memcpy(portno_buffer, buffer + 38, 2);
+    msg.leecher_portno = ntohs(*(unsigned short *)(portno_buffer));
 
     #ifdef DEBUG_MESSAGE
     std::cout << "\n======================================"
               << "\n\tParsing REQ_PEER_MSG"
               << "\n======================================"
               << "\nType: "         << msg.type
-              << "\nFile name: "    << msg.file_name << std::endl;
+              << "\nFile name: "    << msg.file_name 
+              << "\nLeecher IP: "   << msg.leecher_ip
+              << "\nLeecher port: " << msg.leecher_portno << std::endl;
     #endif
 }
 

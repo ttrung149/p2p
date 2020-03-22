@@ -88,6 +88,8 @@ typedef struct __attribute__((__packed__)) err_file_not_found_msg {
 typedef struct __attribute__((__packed__)) req_peer_msg {
     unsigned short type;
     char file_name[20];
+    char leecher_ip[16];
+    unsigned short leecher_portno;
 } ReqPeerMsg;
 
 /* Report invalid IP to index server message */
@@ -119,7 +121,7 @@ RegisterAckMsg *create_register_ack_msg(int, std::string, std::string);
 ReqIdxMsg *create_reqidx_msg(std::string, std::string, unsigned short);
 FileFoundMsg *create_file_found_msg(std::string, unsigned short);
 ErrFileNotFoundMsg *create_err_file_not_found_msg();
-ReqPeerMsg *create_reqpeer_msg(std::string);
+ReqPeerMsg *create_reqpeer_msg(std::string, std::string, unsigned short);
 
 ReportMsg *create_report_msg(int, std::string, std::string, unsigned short, 
                                                 std::string, unsigned short);

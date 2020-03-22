@@ -14,7 +14,7 @@ int main()
     parse_err_file_not_found_msg((char *)err_msg, parsed_err);
     free(err_msg);
 
-    ReqPeerMsg *reqpeer_msg = create_reqpeer_msg("file.txt");
+    ReqPeerMsg *reqpeer_msg = create_reqpeer_msg("file.txt", "localhost", 9065);
     ReqPeerMsg parsed_reqpeer;
     parse_reqpeer_msg((char *)reqpeer_msg, parsed_reqpeer);
     free(reqpeer_msg);
