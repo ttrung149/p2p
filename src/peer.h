@@ -8,20 +8,23 @@
  *  peer node server.
  *  
  *==========================================================================*/
+#include "messages.h"
 #include "tcp.h"
 
 #ifndef PEER_H_
 #define PEER_H_
 
-class Peer {
+class Peer 
+{
     public:
         Peer();
-        void start_server(std::string name, int port);
-        void register_file(std::string idx_host, int idx_port, std::string src);
-        void request_file();
+        void start_server(std::string, int);
+        void handle_incoming_reqs(TCP_Select_Server &, SockData &);
+        void register_file(std::string, int, std::string);
         
     private:
         std::string peer_name;
+        int peer_portno;
 };
 
 #endif
