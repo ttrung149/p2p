@@ -23,7 +23,7 @@
 RegisterMsg *create_register_msg(int file_sz, std::string file_name,
                         std::string ip, unsigned short port, std::string hash)
 {
-    RegisterMsg *msg = (RegisterMsg *)malloc(sizeof(RegisterMsg));
+    RegisterMsg *msg = new RegisterMsg();
     assert(msg);
 
     msg->type = (unsigned short) htons(REGISTER);
@@ -46,8 +46,7 @@ RegisterMsg *create_register_msg(int file_sz, std::string file_name,
  */
 ErrFileNotFoundMsg *create_err_file_not_found_msg()
 {
-    ErrFileNotFoundMsg *msg = 
-            (ErrFileNotFoundMsg *)malloc(sizeof(ErrFileNotFoundMsg));
+    ErrFileNotFoundMsg *msg = new ErrFileNotFoundMsg();
     assert(msg);
 
     msg->type = (unsigned short) htons(ERR_FILE_NOT_FOUND);
@@ -64,7 +63,7 @@ ErrFileNotFoundMsg *create_err_file_not_found_msg()
 ReqPeerMsg *create_reqpeer_msg(std::string file_name, std::string leecher_ip,
                                             unsigned short leecher_portno)
 {
-    ReqPeerMsg *msg = (ReqPeerMsg *)malloc(sizeof(ReqPeerMsg));
+    ReqPeerMsg *msg = new ReqPeerMsg();
     assert(msg);
 
     msg->type = (unsigned short) htons(REQ_PEER);
@@ -87,7 +86,7 @@ ReqPeerMsg *create_reqpeer_msg(std::string file_name, std::string leecher_ip,
 char *create_data_msg(int file_sz, char *data)
 {
     // Allocate memory for message type, file size, and data
-    char *msg = (char *)malloc(file_sz + 6);
+    char *msg = new char[file_sz + 6];
     assert(msg);
     unsigned short type = (unsigned short) htons(DATA);
     memcpy(msg, &type, sizeof(unsigned short));
