@@ -21,10 +21,13 @@ class Peer
         void start_server(std::string, int);
         void handle_incoming_reqs(TCP_Select_Server &, SockData &);
         void register_file(std::string, int, std::string);
+        void request_file_from_peer(std::string, int, std::string);
+        void send_file_to_peer(std::string, int, std::string);
         
     private:
         std::string peer_name;
-        int peer_portno;
+        std::string ip;
+        int portno;
 };
 
 #endif

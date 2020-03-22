@@ -13,6 +13,25 @@
 /* Peer construtor */
 Peer::Peer()
 {
+    char host_buffer[256]; 
+    char *IP_buffer; 
+    int host_name = gethostname(host_buffer, sizeof(host_buffer)); 
+    if (host_name == -1)
+    { 
+        perror("PEER: gethostname"); 
+        exit(EXIT_FAILURE); 
+    }
+  
+    struct hostent *host_entry = gethostbyname(host_buffer); 
+    if (host_entry == NULL) 
+    { 
+        perror("PEER: gethostbyname"); 
+        exit(EXIT_FAILURE); 
+    }
+    IP_buffer = inet_ntoa(*((struct in_addr*) 
+                           host_entry->h_addr_list[0])); 
+  
+    ip = std::string(IP_buffer);
 }
 
 /**
@@ -24,7 +43,7 @@ Peer::Peer()
 void Peer::start_server(std::string name, int port) 
 {
     peer_name = name;
-    peer_portno = port;
+    portno = port;
     TCP_Select_Server server = TCP_Select_Server(TCP_MAX_NUM_CLIENTS, port);
 
     /* Server loop */
@@ -75,8 +94,8 @@ void Peer::start_server(std::string name, int port)
  * @returns Returns true if the buffer size in SockData is equal to
  * or exceeds goal. Else, returns false.
  */
-static bool finished_buffering(SockData &sock, int goal, int bytes_read,
-                                char buffer[])
+static bool finished_buffering(SockData &sock, unsigned int goal, 
+                                unsigned int bytes_read, char buffer[])
 {
     if (sock.bytes_read + bytes_read < goal)
     {
@@ -113,6 +132,7 @@ void Peer::handle_incoming_reqs(TCP_Select_Server &server, SockData &sock)
     // Parse received message
     else 
     {
+        // Update buffer in sock
         memcpy(sock.buffer + sock.bytes_read, buffer, _bytes_read);
         sock.bytes_read += _bytes_read;
 
@@ -120,66 +140,140 @@ void Peer::handle_incoming_reqs(TCP_Select_Server &server, SockData &sock)
         memcpy(type_buf, buffer, 2);
         message_type t = (message_type) ntohs(*(unsigned short *)(type_buf));
     
+        // Handle each incoming request to peer server
         switch (t)
         {
             case REQ_PEER:
             {
-                if (!finished_buffering(sock, sizeof(ReqPeerMsg), 
-                                                _bytes_read, buffer)) return;
+                if (!finished_buffering(sock, sizeof(ReqPeerMsg), 0, buffer)) 
+                {
+                    return;
+                }
                 std::cout << "req_peer\n";
                 
-                ReqPeerMsg parsed_reqpeer;
-                parse_reqpeer_msg(sock.buffer, parsed_reqpeer);
+                // Parse received peer file request message
+                ReqPeerMsg parsed;
+                parse_reqpeer_msg(sock.buffer, parsed);
+
+                // Send file to peer who is requesting the file
+                this->send_file_to_peer(parsed.leecher_ip, 
+                                    parsed.leecher_portno, parsed.file_name);
                 break;
             }
             
             case DATA:
+            {
                 std::cout << "data\n";
-                break;
-            
-            case ERR_FILE_NOT_FOUND:
-                std::cout << "err\n";
-                break;
-            
-            case FILE_FOUND:
-                std::cout << "file found\n";
-                break;
+                // Continue buffering until received msg type and file size
+                if (!finished_buffering(sock, 6, 0, buffer)) return;
+                DataMsg parsed;
+                parse_data_msg(sock.buffer, parsed);
 
-            default:
+                char *data_received = new char[parsed.file_size + 6];
+                memcpy(data_received, sock.buffer, sock.bytes_read);
+
+                while (sock.bytes_read < parsed.file_size + 6)
+                {
+                    bzero(sock.buffer, TCP_BUF_SZ);
+                    int bytes = server.read_from_sock(sock.sock_fd, buffer);
+                    memcpy(data_received + sock.bytes_read, buffer, bytes);
+                    sock.bytes_read += bytes;
+                }
+
+                parse_data_msg(data_received, parsed);
                 server.close_sock(sd);
                 sock.sock_fd = 0;
+                sock.bytes_read = 0;
+                bzero(sock.buffer, TCP_BUF_SZ);
+
+                delete[] data_received;
                 break;
+            }
+            case ERR_FILE_NOT_FOUND:
+            {
+                std::cout << "err\n";
+                break;
+            }
+            case FILE_FOUND:
+            {
+                std::cout << "file found\n";
+                break;
+            }
+
+            default:
+            {
+                std::cout << "default\n";
+                server.close_sock(sd);
+                sock.sock_fd = 0;
+                sock.bytes_read = 0;
+                bzero(sock.buffer, TCP_BUF_SZ);
+                break;
+            }
         }
     }
-
-    // server.write_to_sock(sd, (char *)"Hello from Server!!\n", 21);
-    // server.close_sock(sd);
-    // sock.sock_fd = 0;
 }
 
-void Peer::register_file(std::string idx_host,
-                                    int idx_port, std::string src)
+void Peer::request_file_from_peer(std::string peer_host, int peer_port,
+                                                    std::string file_name)
 {
     TCP_Client peer_client = TCP_Client();
-
-    try 
+    try
     {
-        ReqPeerMsg *reqpeer_msg = create_reqpeer_msg("file.txt");
-        peer_client.connect_to_server(idx_host, idx_port);
+        ReqPeerMsg *reqpeer_msg = create_reqpeer_msg(file_name, ip, portno);
+        peer_client.connect_to_server(peer_host, peer_port);
         peer_client.write_to_sock((char *)reqpeer_msg, sizeof(ReqPeerMsg));
-
-        // char buffer[1024] = {0};
-        // peer_client.read_from_sock(buffer);
-
-        // std::cout << "Response from server: " << buffer << std::endl;
         peer_client.close_sock();
-        free(reqpeer_msg);
+        delete reqpeer_msg;
     }
     catch (TCP_Exceptions exception)
     {
-        std::cout << "Client exception\n";
+        // @TODO: more exception handling
+        std::cout << "Request file from peer exception\n";
+        (void) exception;
+    }
+}
+
+void Peer::send_file_to_peer(std::string peer_host, int peer_port,
+                                                    std::string file_name)
+{
+    TCP_Client peer_client = TCP_Client();
+
+    // File handling
+    std::ifstream requested_file(file_name, std::ios::binary);
+    try
+    {
+        if (requested_file)
+        {
+            // Get file size
+            requested_file.seekg (0, requested_file.end);
+            int file_size = requested_file.tellg();
+            requested_file.seekg (0, requested_file.beg);
+
+            // Read in file to buffer
+            char *data = new char[file_size];
+            assert(data);
+            requested_file.read(data, file_size);
+
+            // Send data message
+            char *data_msg = create_data_msg(file_size, data);
+            peer_client.connect_to_server(peer_host, peer_port);
+            peer_client.write_to_sock(data_msg, file_size + 6);
+            peer_client.close_sock();
+            
+            delete[] data_msg;
+            delete[] data;
+            requested_file.close();
+        }
+        else
+        {
+            std::cout << "File not found\n";
+        }
+    }
+    catch (TCP_Exceptions exception)
+    {
+        // @TODO: more exception handling
+        std::cout << "Request file from peer exception\n";
         (void) exception;
     }
 
-    (void) src;
 }

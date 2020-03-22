@@ -45,7 +45,7 @@ enum TCP_Exceptions {
 /* TCP_Select_Server class */
 typedef struct socket_data {
     int sock_fd;
-    int bytes_read;
+    unsigned int bytes_read;
     char buffer[TCP_BUF_SZ];
 } SockData;
 
