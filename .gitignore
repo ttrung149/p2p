@@ -37,3 +37,6 @@
 peer
 index
 tests_
+
+# Downloaded files
+files/*:*@*
