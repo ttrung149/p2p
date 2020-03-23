@@ -8,6 +8,8 @@
  *  peer node server.
  *  
  *==========================================================================*/
+#include <unordered_map>
+#include <utility>
 #include "messages.h"
 #include "tcp.h"
 
@@ -20,14 +22,19 @@ class Peer
         Peer();
         void start_server(std::string, int);
         void handle_incoming_reqs(TCP_Select_Server &, SockData &);
+        void close_and_reset_sock(TCP_Select_Server &, SockData &);
+
+        /* Request specific functions */
         void register_file(std::string, int, std::string);
         void request_file_from_peer(std::string, int, std::string);
         void send_file_to_peer(std::string, int, std::string);
+        void add_file_segment(DataMsg &msg);
         
     private:
         std::string peer_name;
         std::string ip;
         int portno;
+        std::unordered_map<std::string, std::pair<int, char*>> segments_table;
 };
 
 #endif

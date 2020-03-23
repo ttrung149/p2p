@@ -50,9 +50,9 @@ void prompt(int signum) {
             std::cout << "Exiting.." << std::endl;
             exit(signum);
         }
-        else if (prompt == "r" || prompt == "register")
+        else if (prompt == "req" || prompt == "request")
         {
-            peer.register_file("130.64.23.181", 9065, "file.txt");
+            peer.request_file_from_peer("localhost", 9065, "proposal.tex");
             break;
         }
         else

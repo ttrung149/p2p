@@ -10,6 +10,9 @@
  *==========================================================================*/
 #include "peer.h"
 
+/*===========================================================================
+ * Peer server core function defintions
+ *==========================================================================*/
 /* Peer construtor */
 Peer::Peer()
 {
@@ -30,7 +33,6 @@ Peer::Peer()
     }
     IP_buffer = inet_ntoa(*((struct in_addr*) 
                            host_entry->h_addr_list[0])); 
-  
     ip = std::string(IP_buffer);
 }
 
@@ -62,6 +64,7 @@ void Peer::start_server(std::string name, int port)
             std::cout << "Exceptions\n";
         }
 
+        // Handle incoming traffic
         std::vector<SockData> *client_socks = server.get_client_sock_fds();
         for (auto &socket : *client_socks)
         {
@@ -74,10 +77,8 @@ void Peer::start_server(std::string name, int port)
                 catch (TCP_Exceptions exception)
                 {
                     (void) exception;
-                    server.close_sock(socket.sock_fd);
-                    socket.sock_fd = 0;
-                    socket.bytes_read = 0;
-                    bzero(socket.buffer, TCP_BUF_SZ);
+                   // Socket clean-up
+                    this->close_and_reset_sock(server, socket);
                 }
             }
         }
@@ -143,11 +144,9 @@ void Peer::handle_incoming_reqs(TCP_Select_Server &server, SockData &sock)
             // Send file to peer who is requesting the file
             this->send_file_to_peer(parsed.leecher_ip, 
                                 parsed.leecher_portno, parsed.file_name);
-
-            server.close_sock(sock.sock_fd);
-            sock.sock_fd = 0;
-            sock.bytes_read = 0;
-            bzero(sock.buffer, TCP_BUF_SZ);
+            
+            // Socket clean-up
+            this->close_and_reset_sock(server, sock);
             break;
         }
         case DATA:
@@ -156,11 +155,10 @@ void Peer::handle_incoming_reqs(TCP_Select_Server &server, SockData &sock)
             finish_buffering(sock, server, sizeof(DataMsg));
             DataMsg parsed;
             parse_data_msg(sock.buffer, parsed);
+            this->add_file_segment(parsed);
 
-            server.close_sock(sock.sock_fd);
-            sock.sock_fd = 0;
-            sock.bytes_read = 0;
-            bzero(sock.buffer, TCP_BUF_SZ);
+            // Socket clean-up
+            this->close_and_reset_sock(server, sock);
             break;
         }
         case ERR_FILE_NOT_FOUND:
@@ -176,15 +174,39 @@ void Peer::handle_incoming_reqs(TCP_Select_Server &server, SockData &sock)
         default:
         {
             std::cout << "default\n";
-            server.close_sock(sock.sock_fd);
-            sock.sock_fd = 0;
-            sock.bytes_read = 0;
-            bzero(sock.buffer, TCP_BUF_SZ);
+            // Socket clean-up
+            this->close_and_reset_sock(server, sock);
             break;
         }
     }
 }
 
+/**
+ * Close and reset socket
+ * @param server Passed-by-reference server running in Peer object
+ * @param sock Passed-by-reference SockData object in client sockets
+ * vector
+ * @returns void
+ */
+void Peer::close_and_reset_sock(TCP_Select_Server &server, SockData &sock)
+{
+    server.close_sock(sock.sock_fd);
+    sock.sock_fd = 0;
+    sock.bytes_read = 0;
+    bzero(sock.buffer, TCP_BUF_SZ);
+}
+
+/*===========================================================================
+ * Request specific function definitions
+ *==========================================================================*/
+/**
+ * Send request file message from peer
+ * @param peer_host IP of peer that has the file
+ * @param peer_port Port that peer node (who is possessing the file) is
+ * running on
+ * @param file_name Name of file being transferred
+ * @returns void
+ */
 void Peer::request_file_from_peer(std::string peer_host, int peer_port,
                                                     std::string file_name)
 {
@@ -205,6 +227,14 @@ void Peer::request_file_from_peer(std::string peer_host, int peer_port,
     }
 }
 
+/**
+ * Handle sending file from peer to peer
+ * @param peer_host IP of peer that is expecting to receive file
+ * @param peer_port Port that peer node (who is expecting to receive file) 
+ * is running on
+ * @param file_name Name of file being transferred
+ * @returns void
+ */
 void Peer::send_file_to_peer(std::string peer_host, int peer_port,
                                                     std::string file_name)
 {
@@ -269,5 +299,68 @@ void Peer::send_file_to_peer(std::string peer_host, int peer_port,
         std::cout << "Request file from peer exception\n";
         (void) exception;
     }
+}
 
+/**
+ * Add file segment received from DATA message and assemble file once all 
+ * segments arrived
+ * @param msg Passed-by-reference DataMsg struct containing data segment
+ * @returns void
+ */
+void Peer::add_file_segment(DataMsg &msg)
+{
+    /** 
+     * Data segment table key will be the form of:
+     * <seeder ip>:<seeder port>@<file name>
+     */
+    std::string key = std::string(msg.seeder_ip) + ":" + 
+                      std::to_string(msg.seeder_portno) + "@" +
+                      std::string(msg.file_name);
+
+    // Initial insertion to data segment table for provided key
+    auto it = segments_table.find(key);
+    if (segments_table.find(key) == segments_table.end())
+    {
+        char *file_ptr = new char[msg.file_size];
+        assert(file_ptr);
+
+        char *ptr_to_segno = file_ptr + msg.segno * DATA_MSG_BUF_SIZE;
+        memcpy(ptr_to_segno, msg.data, msg.segment_size);
+        segments_table[key] = std::pair<int, char*>(
+            msg.file_size - msg.segment_size, 
+            file_ptr
+        );
+    }
+    // Append more downloaded segment (if any) to entry associated with key
+    else
+    {
+        char *file_ptr = it->second.second;
+        assert(file_ptr);
+
+        char *ptr_to_segno = file_ptr + msg.segno * DATA_MSG_BUF_SIZE;
+        memcpy(ptr_to_segno, msg.data, msg.segment_size);
+        it->second.first -= msg.segment_size;
+
+        // Done downloading
+        if (it->second.first == 0)
+        {
+            std::ofstream downloaded;
+            downloaded.open (
+                "./files/" + key, 
+                std::ios::out | std::ofstream::binary
+            );
+
+            if (downloaded.is_open())
+            {
+                downloaded.write(it->second.second, msg.file_size);
+                downloaded.close();
+                std::cout << "File '" << key << "' finished dowloading\n";
+            }
+            else
+            {
+                std::cerr << "Error opening file " << key << "\n";
+            }
+            delete[] it->second.second;
+        }
+    }
 }
