@@ -27,6 +27,8 @@
 /*===========================================================================
  * Message structs declarations
  *==========================================================================*/
+const int DATA_MSG_BUF_SIZE = 512;
+
 typedef enum {
     REGISTER,
     REGISTER_CONFIRM,
@@ -104,11 +106,13 @@ typedef struct __attribute__((__packed__)) report_msg {
 } ReportMsg;
 
 /* Data message struct */
-typedef struct data_msg {
+typedef struct __attribute__((__packed__)) data_msg {
     unsigned short type;
     unsigned int file_size;
-    char *data;
+    unsigned int segno;
+    char data[DATA_MSG_BUF_SIZE];
 } DataMsg;
+
 /*===========================================================================
  * Message structs function prototypes
  *==========================================================================*/
@@ -125,7 +129,7 @@ ReqPeerMsg *create_reqpeer_msg(std::string, std::string, unsigned short);
 
 ReportMsg *create_report_msg(int, std::string, std::string, unsigned short, 
                                                 std::string, unsigned short);
-char *create_data_msg(int, char *);
+DataMsg *create_data_msg(int, int, char *);
 
 /* Parsing messages */
 void parse_register_msg(char [], RegisterMsg &);

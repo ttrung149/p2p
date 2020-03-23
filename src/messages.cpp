@@ -80,19 +80,22 @@ ReqPeerMsg *create_reqpeer_msg(std::string file_name, std::string leecher_ip,
 /**
  * Create data message that delivers the requested file
  * @param file_sz size of file. This value must be equal to size of data
+ * @param segno data segment index of file. Large file will be divided
+ * into 512 bytes data segment
  * @param data pointer to data being delivered
  * @returns Pointer to newly allocated data message
  */
-char *create_data_msg(int file_sz, char *data)
+DataMsg *create_data_msg(int file_sz, int segno, char *data)
 {
     // Allocate memory for message type, file size, and data
-    char *msg = new char[file_sz + 6];
+    DataMsg *msg = new DataMsg();
     assert(msg);
-    unsigned short type = (unsigned short) htons(DATA);
-    memcpy(msg, &type, sizeof(unsigned short));
-    int _file_sz = htonl(file_sz);
-    memcpy(msg + 2, &_file_sz, sizeof(int));
-    memcpy(msg + 6, data, sizeof(char) * file_sz);
+    msg->type = (unsigned short) htons(DATA);
+    msg->file_size = htonl(file_sz);
+    msg->segno = htonl(segno);
+
+    bzero(msg->data, DATA_MSG_BUF_SIZE);
+    memcpy(msg->data, data, sizeof(char) * file_sz);
 
     return msg;
 }
@@ -209,7 +212,11 @@ void parse_data_msg(char buffer[], DataMsg &msg)
     memcpy(file_sz_buffer, buffer + 2, 4);
     msg.file_size = ntohl(*(unsigned int *)(file_sz_buffer));
 
-    msg.data = buffer + 6;
+    char segno_buffer[4];
+    memcpy(segno_buffer, buffer + 6, 4);
+    msg.segno = ntohl(*(unsigned int *)(segno_buffer));
+
+    memcpy(msg.data, buffer + 10, DATA_MSG_BUF_SIZE);
 
     #ifdef DEBUG_MESSAGE
     std::cout << "\n======================================"
@@ -217,6 +224,7 @@ void parse_data_msg(char buffer[], DataMsg &msg)
               << "\n======================================"
               << "\nType: "         << msg.type
               << "\nFile size: "    << msg.file_size 
+              << "\nSegment no: "   << msg.segno
               << "\nData: "         << msg.data << std::endl;
     #endif
 }

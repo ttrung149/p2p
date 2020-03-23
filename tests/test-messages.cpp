@@ -19,11 +19,11 @@ int main()
     parse_reqpeer_msg((char *)reqpeer_msg, parsed_reqpeer);
     delete reqpeer_msg;
 
-    char *data_msg = create_data_msg(187, (char *)"Lorem ipsum dolor \
+    DataMsg *data_msg = create_data_msg(187, 15, (char *)"Lorem ipsum dolor \
     sit amet, consectetur adipiscing elit, sed do eiusmod tempor \
     incididunt ut labore et dolore magna aliqua. Ut enim ad minim \
     veniam, quis nostrud exercitation");
     DataMsg parsed_data;
-    parse_data_msg(data_msg, parsed_data);
-    delete[] data_msg;
+    parse_data_msg((char *)data_msg, parsed_data);
+    delete data_msg;
 }
