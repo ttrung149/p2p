@@ -14,7 +14,7 @@
 #include <arpa/inet.h>
 
 /*===== Uncomment for debugging =====*/
-#define DEBUG_MESSAGE
+// #define DEBUG_MESSAGE
 /*===================================*/
 
 #ifdef DEBUG_MESSAGE
@@ -109,7 +109,11 @@ typedef struct __attribute__((__packed__)) report_msg {
 typedef struct __attribute__((__packed__)) data_msg {
     unsigned short type;
     unsigned int file_size;
+    char file_name[20];
+    unsigned int segment_size;
     unsigned int segno;
+    char seeder_ip[16];
+    unsigned short seeder_portno;
     char data[DATA_MSG_BUF_SIZE];
 } DataMsg;
 
@@ -129,7 +133,8 @@ ReqPeerMsg *create_reqpeer_msg(std::string, std::string, unsigned short);
 
 ReportMsg *create_report_msg(int, std::string, std::string, unsigned short, 
                                                 std::string, unsigned short);
-DataMsg *create_data_msg(int, int, char *);
+DataMsg *create_data_msg(int, int, int, std::string, std::string, 
+                                                unsigned short, char *);
 
 /* Parsing messages */
 void parse_register_msg(char [], RegisterMsg &);

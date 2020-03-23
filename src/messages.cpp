@@ -57,7 +57,7 @@ ErrFileNotFoundMsg *create_err_file_not_found_msg()
  * Create RequestPeer message
  * @param file_name name of file being requested from peer
  * @param leecher_ip leecher IP address
- * @param leecher_port leecher IP port
+ * @param leecher_portno leecher IP port
  * @returns Pointer to newly allocated ErrFileNotFoundMsg struct
  */
 ReqPeerMsg *create_reqpeer_msg(std::string file_name, std::string leecher_ip,
@@ -79,23 +79,36 @@ ReqPeerMsg *create_reqpeer_msg(std::string file_name, std::string leecher_ip,
 
 /**
  * Create data message that delivers the requested file
- * @param file_sz size of file. This value must be equal to size of data
+ * @param file_sz size of file
+ * @param segment_sz size of segment (file will be divided in small chunks)
  * @param segno data segment index of file. Large file will be divided
  * into 512 bytes data segment
+ * @param file_name name of file being delivered
+ * @param ip IP address of seeder machine holding file segment
+ * @param portno Port number that seeder machine holding file segment
+ * is running on
  * @param data pointer to data being delivered
  * @returns Pointer to newly allocated data message
  */
-DataMsg *create_data_msg(int file_sz, int segno, char *data)
+DataMsg *create_data_msg(int file_sz, int segment_sz, int segno, 
+    std::string file_name, std::string ip, unsigned short portno, char *data)
 {
     // Allocate memory for message type, file size, and data
     DataMsg *msg = new DataMsg();
     assert(msg);
     msg->type = (unsigned short) htons(DATA);
     msg->file_size = htonl(file_sz);
+    msg->segment_size = htonl(segment_sz);
     msg->segno = htonl(segno);
 
+    bzero(msg->file_name, 20);
+    strncpy(msg->file_name, file_name.data(), 20);
+    bzero(msg->seeder_ip, 16);
+    strncpy(msg->seeder_ip, ip.data(), 16);
+    msg->seeder_portno = (unsigned short) htons(portno);
+
     bzero(msg->data, DATA_MSG_BUF_SIZE);
-    memcpy(msg->data, data, sizeof(char) * file_sz);
+    memcpy(msg->data, data, sizeof(char) * segment_sz);
 
     return msg;
 }
@@ -212,11 +225,21 @@ void parse_data_msg(char buffer[], DataMsg &msg)
     memcpy(file_sz_buffer, buffer + 2, 4);
     msg.file_size = ntohl(*(unsigned int *)(file_sz_buffer));
 
+    strncpy(msg.file_name, buffer + 6, 20);
+    char segment_sz_buffer[4];
+    memcpy(segment_sz_buffer, buffer + 26, 4);
+    msg.segment_size = ntohl(*(unsigned int *)(segment_sz_buffer));
+
     char segno_buffer[4];
-    memcpy(segno_buffer, buffer + 6, 4);
+    memcpy(segno_buffer, buffer + 30, 4);
     msg.segno = ntohl(*(unsigned int *)(segno_buffer));
 
-    memcpy(msg.data, buffer + 10, DATA_MSG_BUF_SIZE);
+    strncpy(msg.seeder_ip, buffer + 34, 16);
+    char portno_buffer[2];
+    memcpy(portno_buffer, buffer + 50, 2);
+    msg.seeder_portno = ntohs(*(unsigned short *)(portno_buffer));
+
+    memcpy(msg.data, buffer + 52, DATA_MSG_BUF_SIZE);
 
     #ifdef DEBUG_MESSAGE
     std::cout << "\n======================================"
@@ -224,7 +247,11 @@ void parse_data_msg(char buffer[], DataMsg &msg)
               << "\n======================================"
               << "\nType: "         << msg.type
               << "\nFile size: "    << msg.file_size 
+              << "\nFile name: "    << msg.file_name
+              << "\nSegment size: " << msg.segment_size 
               << "\nSegment no: "   << msg.segno
+              << "\nSeeder IP: "    << msg.seeder_ip
+              << "\nSeeder port: "  << msg.seeder_portno
               << "\nData: "         << msg.data << std::endl;
     #endif
 }
