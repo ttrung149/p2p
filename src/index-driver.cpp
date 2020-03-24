@@ -1,41 +1,59 @@
-#include "tcp.h"
+/*============================================================================
+ *  p2p - Trung Truong
+ *
+ *  File name: index-driver.cpp
+ *
+ *  Description: Main driver for Inde node. 
+ *  Usage: ./peer
+ * 
+ *==========================================================================*/
+#include <fstream>
+#include <iostream>
+#include <string>
+#include <vector>
+#include <csignal>
 
-int main()
-{
-    TCP_Select_Server server = TCP_Select_Server(TCP_MAX_NUM_CLIENTS, 9065);
+#include "picosha2.h"
+#include "index.h"
 
-    while (true)
-    {
-        server.monitor();
-        server.add_sock();
-        std::vector<SockData> *client_sock_fds = server.get_client_sock_fds();
-        for (auto &socket : *client_sock_fds)
+static Index idx;
+
+void prompt(int signum) {
+    std::string prompt;
+
+    std::cout << "\n======================================================"
+              << "\nIndex server loop paused. Type 'help' for more details."
+              << "\nEnter options: ";
+    std::cin >> prompt;
+
+    while (true) {
+        if (prompt == "h" || prompt == "help")
         {
-            if (server.is_socket_set(socket.sock_fd)) 
-            { 
-                int sd = socket.sock_fd;
-                try 
-                {
-                    char buffer[TCP_BUF_SZ];
-                    int bytes_read = server.read_from_sock(sd, buffer);
-
-                    if (bytes_read == 0) 
-                    {
-                        server.close_sock(sd);
-                        sd = 0;
-                    }
-
-                    server.write_to_sock(sd, (char *)"Hello from Server!!\n", 21);
-                    server.close_sock(sd);
-                    socket.sock_fd = 0;
-                }
-                catch (TCP_Exceptions exception)
-                {
-                    (void) exception;
-                    server.close_sock(sd);
-                    socket.sock_fd = 0;
-                }
-            }
+            std::cout << "help" << std::endl;
+            break;
         }
-    }  
+        else if (prompt == "q" || prompt == "quit")
+        {
+            std::cout << "Exiting.." << std::endl;
+            exit(signum);
+        }
+        else if (prompt == "req" || prompt == "request")
+        {
+            break;
+        }
+        else
+        {
+            std::cout << "Unknown command.. Try again" << std::endl;
+            std::cin >> prompt;
+        }
+    }
+
+    std::cout << "Back to server loop.." << std::endl;
+}
+
+int main() {
+    signal(SIGINT, prompt);
+    idx.start_server(9065);
+
+    return 0;
 }
