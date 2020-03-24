@@ -53,6 +53,7 @@ class TCP_Select_Server
 {
     public:
         TCP_Select_Server(int num_clients, int portno);
+        ~TCP_Select_Server();
         void monitor();
         void add_sock();
         int read_from_sock(int sock_fd, char buffer[]);
@@ -78,6 +79,7 @@ class TCP_Server
 {
     public:
         TCP_Server(int portno);
+        ~TCP_Server();
         void accept_sock();
         int read_from_sock(char buffer[]);
         int write_to_sock(char *msg, int size);
@@ -95,6 +97,7 @@ class TCP_Client
 {
     public:
         TCP_Client();
+        ~TCP_Client();
         void connect_to_server(std::string host, int portno);
         int read_from_sock(char buffer[]);
         int write_to_sock(char *msg, int size);

@@ -90,6 +90,10 @@ void TCP_Select_Server::monitor()
     }
 }
 
+TCP_Select_Server::~TCP_Select_Server()
+{
+}
+
 void TCP_Select_Server::add_sock()
 {
     if (FD_ISSET(server_fd, &read_fds)) 
@@ -193,6 +197,10 @@ TCP_Server::TCP_Server(int portno)
     }
 }
 
+TCP_Server::~TCP_Server()
+{
+}
+
 void TCP_Server::accept_sock() 
 {
     /* Generate new socket fd from connection */
@@ -235,6 +243,10 @@ void TCP_Server::close_sock()
  * TCP client implementation
  *==========================================================================*/
 TCP_Client::TCP_Client()
+{
+}
+
+TCP_Client::~TCP_Client()
 {
 }
 
