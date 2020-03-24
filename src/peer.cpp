@@ -163,7 +163,10 @@ void Peer::handle_incoming_reqs(TCP_Select_Server &server, SockData &sock)
         }
         case ERR_FILE_NOT_FOUND:
         {
-            std::cout << "err\n";
+            std::cerr << "ERR: File requested not found! \n";
+
+            // Socket clean-up
+            this->close_and_reset_sock(server, sock);
             break;
         }
         case FILE_FOUND:
@@ -173,7 +176,6 @@ void Peer::handle_incoming_reqs(TCP_Select_Server &server, SockData &sock)
         }
         default:
         {
-            std::cout << "default\n";
             // Socket clean-up
             this->close_and_reset_sock(server, sock);
             break;
@@ -290,7 +292,11 @@ void Peer::send_file_to_peer(std::string peer_host, int peer_port,
         }
         else
         {
-            std::cout << "File not found\n";
+            peer_client.connect_to_server(peer_host, peer_port);
+            ErrFileNotFoundMsg *m = create_err_file_not_found_msg();
+            peer_client.write_to_sock((char *)m, sizeof(ErrFileNotFoundMsg));
+            delete m;
+            peer_client.close_sock();
         }
     }
     catch (TCP_Exceptions exception)
