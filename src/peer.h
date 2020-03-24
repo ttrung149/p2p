@@ -20,7 +20,7 @@ class Peer
 {
     public:
         Peer();
-        void start_server(std::string, int);
+        void start_server(int);
         void handle_incoming_reqs(TCP_Select_Server &, SockData &);
         void close_and_reset_sock(TCP_Select_Server &, SockData &);
 
@@ -31,7 +31,6 @@ class Peer
         void add_file_segment(DataMsg &msg);
         
     private:
-        std::string peer_name;
         std::string ip;
         int portno;
         std::unordered_map<std::string, std::pair<int, char*>> segments_table;

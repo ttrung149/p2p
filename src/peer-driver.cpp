@@ -68,7 +68,7 @@ void prompt(int signum) {
 int main() {
     //std::cout << hash1("main") << std::endl;   
     signal(SIGINT, prompt);
-    peer.start_server("peer1", 9065);
+    peer.start_server(9065);
 
     return 0;
 }

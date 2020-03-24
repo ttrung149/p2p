@@ -38,13 +38,11 @@ Peer::Peer()
 
 /**
  * Start peer server
- * @param name Set peer server name
- * @param port Set pper server port to run on.
+ * @param port Set peer server port to run on.
  * @returns void
  */
-void Peer::start_server(std::string name, int port) 
+void Peer::start_server(int port) 
 {
-    peer_name = name;
     portno = port;
     TCP_Select_Server server = TCP_Select_Server(TCP_MAX_NUM_CLIENTS, port);
 
@@ -367,6 +365,7 @@ void Peer::add_file_segment(DataMsg &msg)
                 std::cerr << "Error opening file " << key << "\n";
             }
             delete[] it->second.second;
+            segments_table.erase(key);
         }
     }
 }
