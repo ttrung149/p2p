@@ -42,7 +42,12 @@ void prompt(int signum) {
     while (true) {
         if (prompt == "h" || prompt == "help")
         {
-            std::cout << "help" << std::endl;
+            std::cout << "\nAvailable options:"
+                      << "\n-----------------"
+                      << "\n> q/quit \tQuit peer node"
+                      << "\n> req/request \tRequest file from index server"
+                      << "\n> i/index \tUpdate index server information"
+                      << std::endl;
             break;
         }
         else if (prompt == "q" || prompt == "quit")
@@ -52,23 +57,55 @@ void prompt(int signum) {
         }
         else if (prompt == "req" || prompt == "request")
         {
-            peer.request_file_from_peer("localhost", 9065, "proposal.tex");
+            std::cout << "Enter requested file name: ";
+            std::string file_name;
+            std::cin >> file_name; 
+            peer.request_file_from_index(file_name);
+            break;
+        }
+        else if (prompt == "i" || prompt == "index")
+        {
+            std::string ip, port;
+            std::cout << "Update index server information..\n"
+                      << "Enter index server IP address: ";
+            std::cin >> ip;
+            std::cout << "Enter index server port number: ";
+            std::cin >> port;
+            peer.set_index_info(ip, (unsigned int) std::stoi(port));
+            std::cout << "New index server info saved\n";
             break;
         }
         else
         {
-            std::cout << "Unknown command.. Try again" << std::endl;
+            std::cout << "Unknown command.. Try again. Enter options: ";
             std::cin >> prompt;
         }
     }
 
-    std::cout << "Back to server loop.." << std::endl;
+    std::cout << "\nBack to server loop..\n";
 }
 
-int main() {
+/* Main peer driver */
+int main(int argc,char* argv[]) 
+{
+    if (argc != 2)
+    {
+        std::cerr << "Usage: ./peer <port number>\n";
+        exit(EXIT_FAILURE);
+    }
+
     //std::cout << hash1("main") << std::endl;   
     signal(SIGINT, prompt);
-    peer.start_server(9065);
+    std::string ip, port;
+    std::cout << "Enter index server IP address: ";
+    std::cin >> ip;
+    std::cout << "Enter index server port number: ";
+    std::cin >> port;
+    peer.set_index_info(ip, (unsigned int) std::stoi(port));
+
+    std::cout << "\n======================================================"
+              << "\nStarting peer server at port " << argv[1] << "\n";
+    peer.start_server(atoi(argv[1]));
 
     return 0;
 }

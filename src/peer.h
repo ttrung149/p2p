@@ -20,19 +20,22 @@ class Peer
 {
     public:
         Peer();
+        ~Peer();
+        void set_index_info(std::string, int);
         void start_server(int);
         void handle_incoming_reqs(TCP_Select_Server &, SockData &);
         void close_and_reset_sock(TCP_Select_Server &, SockData &);
 
         /* Request specific functions */
         void register_file(std::string, int, std::string);
+        void request_file_from_index(std::string);
         void request_file_from_peer(std::string, int, std::string);
         void send_file_to_peer(std::string, int, std::string);
         void add_file_segment(DataMsg &msg);
         
     private:
-        std::string ip;
-        int portno;
+        std::string ip, index_ip = "";
+        int portno, index_portno = -1;
         std::unordered_map<std::string, std::pair<int, char*>> segments_table;
 };
 

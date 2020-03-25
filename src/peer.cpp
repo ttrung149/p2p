@@ -36,6 +36,23 @@ Peer::Peer()
     ip = std::string(IP_buffer);
 }
 
+/* Peer destructor */
+Peer::~Peer()
+{
+}
+
+/**
+ * Set index server info
+ * @param port index server IP
+ * @param port index server port
+ * @returns void
+ */
+void Peer::set_index_info(std::string ip, int portno)
+{
+    index_ip = ip;
+    index_portno = portno;
+}
+
 /**
  * Start peer server
  * @param port Set peer server port to run on.
@@ -132,12 +149,12 @@ void Peer::handle_incoming_reqs(TCP_Select_Server &server, SockData &sock)
     // Handle each incoming request to peer server
     switch (t)
     {
-        case REQ_PEER:
+        case REQ_FILE:
         {
-            // Continue buffering until received full req_peer message
-            finish_buffering(sock, server, sizeof(ReqPeerMsg));
-            ReqPeerMsg parsed;
-            parse_reqpeer_msg(sock.buffer, parsed);
+            // Continue buffering until received full req_file message
+            finish_buffering(sock, server, sizeof(ReqFileMsg));
+            ReqFileMsg parsed;
+            parse_reqfile_msg(sock.buffer, parsed);
 
             // Send file to peer who is requesting the file
             this->send_file_to_peer(parsed.leecher_ip, 
@@ -200,7 +217,38 @@ void Peer::close_and_reset_sock(TCP_Select_Server &server, SockData &sock)
  * Request specific function definitions
  *==========================================================================*/
 /**
- * Send request file message from peer
+ * Send request file message from peer to index
+ * @param file_name Name of file being requested
+ * @returns void
+ */
+void Peer::request_file_from_index(std::string file_name)
+{
+    TCP_Client peer_client = TCP_Client();
+    try
+    {
+        ReqFileMsg *reqfile_msg = create_reqfile_msg(file_name, ip, portno);
+        peer_client.connect_to_server(index_ip, index_portno);
+        peer_client.write_to_sock((char *)reqfile_msg, sizeof(ReqFileMsg));
+        peer_client.close_sock();
+        delete reqfile_msg;
+    }
+    catch (TCP_Exceptions exception)
+    {
+        if (exception == FAILURE_CONNECT_TO_HOST)
+        {
+            std::cerr << "ERR: Invalid index server IP and host.. " 
+                      << "Hint: Enter index server IP and host again\n";
+        }
+        else 
+        {
+            std::cerr << "ERR: Failed to request file '" << file_name
+                    << "' from index server\n";
+        }
+    }
+}
+
+/**
+ * Send request file message from peer to peer
  * @param peer_host IP of peer that has the file
  * @param peer_port Port that peer node (who is possessing the file) is
  * running on
@@ -213,17 +261,17 @@ void Peer::request_file_from_peer(std::string peer_host, int peer_port,
     TCP_Client peer_client = TCP_Client();
     try
     {
-        ReqPeerMsg *reqpeer_msg = create_reqpeer_msg(file_name, ip, portno);
+        ReqFileMsg *reqfile_msg = create_reqfile_msg(file_name, ip, portno);
         peer_client.connect_to_server(peer_host, peer_port);
-        peer_client.write_to_sock((char *)reqpeer_msg, sizeof(ReqPeerMsg));
+        peer_client.write_to_sock((char *)reqfile_msg, sizeof(ReqFileMsg));
         peer_client.close_sock();
-        delete reqpeer_msg;
+        delete reqfile_msg;
     }
     catch (TCP_Exceptions exception)
     {
-        // @TODO: more exception handling
-        std::cout << "Request file from peer exception\n";
         (void) exception;
+        std::cerr << "ERR: Failed to request file '" << file_name << "' from '"
+                  << peer_host << ":" << peer_port << "'\n";
     }
 }
 
