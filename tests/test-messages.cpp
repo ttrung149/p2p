@@ -14,10 +14,10 @@ int main()
     parse_err_file_not_found_msg((char *)err_msg, parsed_err);
     delete err_msg;
 
-    ReqPeerMsg *reqpeer_msg = create_reqpeer_msg("file.txt", "localhost", 9065);
-    ReqPeerMsg parsed_reqpeer;
-    parse_reqpeer_msg((char *)reqpeer_msg, parsed_reqpeer);
-    delete reqpeer_msg;
+    ReqFileMsg *reqfile_msg = create_reqfile_msg("file.txt", "localhost", 9065);
+    ReqFileMsg parsed_reqpeer;
+    parse_reqfile_msg((char *)reqfile_msg, parsed_reqpeer);
+    delete reqfile_msg;
 
     DataMsg *data_msg = create_data_msg(187, 15, 1, "file.txt", "localhost", 9065,
     (char *)"Lorem ipsum dolor sit amet, consectetur adipiscing elit, \

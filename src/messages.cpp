@@ -54,19 +54,19 @@ ErrFileNotFoundMsg *create_err_file_not_found_msg()
 }
 
 /**
- * Create RequestPeer message
- * @param file_name name of file being requested from peer
+ * Create Request File message
+ * @param file_name name of file being requested
  * @param leecher_ip leecher IP address
- * @param leecher_portno leecher IP port
- * @returns Pointer to newly allocated ErrFileNotFoundMsg struct
+ * @param leecher_portno leecher port
+ * @returns Pointer to newly allocated ReqFileMsg struct
  */
-ReqPeerMsg *create_reqpeer_msg(std::string file_name, std::string leecher_ip,
+ReqFileMsg *create_reqfile_msg(std::string file_name, std::string leecher_ip,
                                             unsigned short leecher_portno)
 {
-    ReqPeerMsg *msg = new ReqPeerMsg();
+    ReqFileMsg *msg = new ReqFileMsg();
     assert(msg);
 
-    msg->type = (unsigned short) htons(REQ_PEER);
+    msg->type = (unsigned short) htons(REQ_FILE);
     bzero(msg->file_name, 20);
     strncpy(msg->file_name, file_name.data(), 20);
 
@@ -177,14 +177,14 @@ void parse_err_file_not_found_msg(char buffer[], ErrFileNotFoundMsg &msg)
 }
 
 /**
- * Parse request peer message
+ * Parse request file message
  * @param[in] buffer Buffer array containg register message. Buffer size 
- * must be bigger than or equal to the size of ReqPeerMsg struct.
- * @param[out] msg Passed-by-reference value of ReqPeerMsg struct. The buffer
+ * must be bigger than or equal to the size of ReqFileMsg struct.
+ * @param[out] msg Passed-by-reference value of ReqFileMsg struct. The buffer
  * will be parsed and populated in this struct.
  * @returns void
  */
-void parse_reqpeer_msg(char buffer[], ReqPeerMsg &msg)
+void parse_reqfile_msg(char buffer[], ReqFileMsg &msg)
 {
     char type_buffer[2];
     memcpy(type_buffer, buffer, 2);
@@ -198,7 +198,7 @@ void parse_reqpeer_msg(char buffer[], ReqPeerMsg &msg)
 
     #ifdef DEBUG_MESSAGE
     std::cout << "\n======================================"
-              << "\n\tParsing REQ_PEER_MSG"
+              << "\n\tParsing REQ_FILE_MSG"
               << "\n======================================"
               << "\nType: "         << msg.type
               << "\nFile name: "    << msg.file_name 

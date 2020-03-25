@@ -27,16 +27,15 @@
 /*===========================================================================
  * Message structs declarations
  *==========================================================================*/
-const int DATA_MSG_BUF_SIZE = 512;
+const int DATA_MSG_BUF_SIZE = 8000;
 
 typedef enum {
     REGISTER,
     REGISTER_CONFIRM,
     REGISTER_ACK,
-    REQ_IDX,
     FILE_FOUND,
     ERR_FILE_NOT_FOUND,
-    REQ_PEER,
+    REQ_FILE,
     DATA,
     REPORT
 } message_type;
@@ -86,13 +85,13 @@ typedef struct __attribute__((__packed__)) err_file_not_found_msg {
     unsigned short type;
 } ErrFileNotFoundMsg;
 
-/* Request file from peer server message */
-typedef struct __attribute__((__packed__)) req_peer_msg {
+/* Request file from peer/index server message */
+typedef struct __attribute__((__packed__)) req_file_msg {
     unsigned short type;
     char file_name[20];
     char leecher_ip[16];
     unsigned short leecher_portno;
-} ReqPeerMsg;
+} ReqFileMsg;
 
 /* Report invalid IP to index server message */
 typedef struct __attribute__((__packed__)) report_msg {
@@ -126,10 +125,9 @@ RegisterMsg *create_register_msg(int, std::string, std::string, unsigned short,
                                                 std::string);
 RegisterConfirmMsg *create_reg_confirm_msg(int, std::string);
 RegisterAckMsg *create_register_ack_msg(int, std::string, std::string);
-ReqIdxMsg *create_reqidx_msg(std::string, std::string, unsigned short);
 FileFoundMsg *create_file_found_msg(std::string, unsigned short);
 ErrFileNotFoundMsg *create_err_file_not_found_msg();
-ReqPeerMsg *create_reqpeer_msg(std::string, std::string, unsigned short);
+ReqFileMsg *create_reqfile_msg(std::string, std::string, unsigned short);
 
 ReportMsg *create_report_msg(int, std::string, std::string, unsigned short, 
                                                 std::string, unsigned short);
@@ -140,10 +138,9 @@ DataMsg *create_data_msg(int, int, int, std::string, std::string,
 void parse_register_msg(char [], RegisterMsg &);
 void parse_register_confirm_msg(char [], RegisterConfirmMsg &);
 void parse_register_ack_msg(char [], RegisterAckMsg &);
-void parse_reqidx_msg(char [], ReqIdxMsg &);
 void parse_file_found_msg(char [], FileFoundMsg &);
 void parse_err_file_not_found_msg(char [], ErrFileNotFoundMsg &);
-void parse_reqpeer_msg(char [], ReqPeerMsg &);
+void parse_reqfile_msg(char [], ReqFileMsg &);
 void parse_report_msg(char [], ReportMsg &);
 void parse_data_msg(char [], DataMsg &);
 
