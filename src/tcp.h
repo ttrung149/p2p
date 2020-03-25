@@ -26,7 +26,7 @@
 #define TCP_H_
 
 /* Constants */
-const int TCP_BUF_SZ = 1024;
+const int TCP_BUF_SZ = 8192;
 const int TCP_MAX_NUM_CLIENTS = 20;
 
 enum TCP_Exceptions {
