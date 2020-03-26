@@ -36,8 +36,7 @@ TCP_Select_Server::TCP_Select_Server(int _num_clients, int portno)
 	} 
 	
 	/* Allow server rerun immediately after being killed */   
-    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, 
-                                                  &opt, sizeof(opt))) 
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt))) 
     { 
         perror("TCP SELECT SERVER ERR: setsockopt"); 
         throw FAILURE_SETSOCKOPT; 
@@ -169,8 +168,7 @@ TCP_Server::TCP_Server(int portno)
     } 
     
     /* Allow server rerun immediately after being killed */   
-    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, 
-                                                  &opt, sizeof(opt))) 
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)))
     { 
         perror("TCP SERVER ERR: setsockopt"); 
         throw FAILURE_SETSOCKOPT; 
