@@ -132,8 +132,13 @@ void Index::handle_incoming_reqs(TCP_Select_Server &server, SockData &sock)
     // Handle each incoming request to index server
     switch (t)
     {
-        case REQ_PEER:
-        {            
+        case REGISTER:
+        {
+            // Continue buffering until received full req_file message
+            finish_buffering(sock, server, sizeof(RegisterMsg));
+            RegisterMsg parsed;
+            parse_register_msg(sock.buffer, parsed);
+
             // Socket clean-up
             this->close_and_reset_sock(server, sock);
             break;
