@@ -216,6 +216,65 @@ void Peer::close_and_reset_sock(TCP_Select_Server &server, SockData &sock)
 /*===========================================================================
  * Request specific function definitions
  *==========================================================================*/
+
+/**
+ * Register file to index server. This peer will become a seeder for this 
+ * file if it is confirmed
+ * @param file_name Name of file being registered
+ * @returns void
+ */
+
+void Peer::register_file(std::string file_name)
+{
+    TCP_Client peer_client = TCP_Client();
+    std::ifstream registered_file(file_name, std::ios::binary);
+    try
+    {
+        if (registered_file)
+        {
+            // Get file size
+            registered_file.seekg(0, registered_file.end);
+            int file_size = registered_file.tellg();
+            registered_file.seekg(0, registered_file.beg);
+
+            // Get file SHA-256 hash
+            std::vector<char> vec(picosha2::k_digest_size);
+            std::string file_hash;
+            picosha2::hash256(registered_file, vec.begin(), vec.end());
+            picosha2::hash256_hex_string(vec, file_hash);
+
+            // Generate register message and send to index server
+            RegisterMsg *msg = create_register_msg(
+                file_size, file_name, ip, portno, file_hash
+            );
+            peer_client.connect_to_server(index_ip, index_portno);
+            peer_client.write_to_sock((char *)msg, sizeof(RegisterMsg));
+            peer_client.close_sock();
+            delete msg;
+
+            // File clean-up
+            registered_file.close();
+        }
+        else
+        {
+            peer_client.close_sock();
+        }
+    }
+    catch (TCP_Exceptions exception)
+    {
+        if (exception == FAILURE_CONNECT_TO_HOST)
+        {
+            std::cerr << "ERR: Invalid index server IP and host.. " 
+                      << "Hint: Enter index server IP and host again\n";
+        }
+        else 
+        {
+            std::cerr << "ERR: Failed to register file '" << file_name
+                      << "' to index server\n";
+        }
+    }
+}
+
 /**
  * Send request file message from peer to index
  * @param file_name Name of file being requested
@@ -242,7 +301,7 @@ void Peer::request_file_from_index(std::string file_name)
         else 
         {
             std::cerr << "ERR: Failed to request file '" << file_name
-                    << "' from index server\n";
+                      << "' from index server\n";
         }
     }
 }
@@ -369,6 +428,29 @@ void Peer::add_file_segment(DataMsg &msg)
                       std::to_string(msg.seeder_portno) + "@" +
                       std::string(msg.file_name);
 
+    // Handle case when there's only one file segment for entire file
+    if (msg.file_size == msg.segment_size)
+    {
+        std::ofstream downloaded;
+        downloaded.open (
+            "./files/" + key, 
+            std::ios::out | std::ofstream::binary
+        );
+
+        if (downloaded.is_open())
+        {
+            downloaded.write(msg.data, msg.file_size);
+            downloaded.close();
+            std::cout << "File '" << key << "' finished dowloading\n";
+        }
+        else
+        {
+            std::cerr << "Error opening file " << key << "\n";
+        }
+        return;
+    }
+
+    // Handle case when there are more than one segments for entire file
     // Initial insertion to data segment table for provided key
     auto it = segments_table.find(key);
     if (segments_table.find(key) == segments_table.end())

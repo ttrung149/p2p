@@ -55,6 +55,14 @@ void prompt(int signum) {
             std::cout << "Exiting.." << std::endl;
             exit(signum);
         }
+        else if (prompt == "reg" || prompt == "register")
+        {
+            std::cout << "Enter name of file being registered: ";
+            std::string file_name;
+            std::cin >> file_name; 
+            peer.register_file(file_name);
+            break;
+        }
         else if (prompt == "req" || prompt == "request")
         {
             std::cout << "Enter requested file name: ";

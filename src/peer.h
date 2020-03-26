@@ -12,6 +12,7 @@
 #include <utility>
 #include "messages.h"
 #include "tcp.h"
+#include "picosha2.h"
 
 #ifndef PEER_H_
 #define PEER_H_
@@ -27,7 +28,7 @@ class Peer
         void close_and_reset_sock(TCP_Select_Server &, SockData &);
 
         /* Request specific functions */
-        void register_file(std::string, int, std::string);
+        void register_file(std::string);
         void request_file_from_index(std::string);
         void request_file_from_peer(std::string, int, std::string);
         void send_file_to_peer(std::string, int, std::string);
