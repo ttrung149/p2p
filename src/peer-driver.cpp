@@ -18,19 +18,6 @@
 
 static Peer peer;
 
-std::string hash1(std::string fileName)
-{
-    std::ifstream inputFile(fileName, std::ios::binary);
-    std::vector<char> hashVec(picosha2::k_digest_size);
-    std::string hexHash;
-
-    picosha2::hash256(inputFile, hashVec.begin(), hashVec.end());
-    picosha2::hash256_hex_string(hashVec, hexHash);
-    inputFile.close();
-    
-    return hexHash;
-}
-
 void prompt(int signum) {
     std::string prompt;
 
@@ -102,7 +89,6 @@ int main(int argc,char* argv[])
         exit(EXIT_FAILURE);
     }
 
-    //std::cout << hash1("main") << std::endl;   
     signal(SIGINT, prompt);
     std::string ip, port;
     std::cout << "Enter index server IP address: ";

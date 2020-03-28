@@ -28,6 +28,7 @@ class Peer
         void close_and_reset_sock(TCP_Select_Server &, SockData &);
 
         /* Request specific functions */
+        void ack_registered_file(std::string, int, std::string, int);
         void register_file(std::string);
         void request_file_from_index(std::string);
         void request_file_from_peer(std::string, int, std::string);

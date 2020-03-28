@@ -149,6 +149,22 @@ void Peer::handle_incoming_reqs(TCP_Select_Server &server, SockData &sock)
     // Handle each incoming request to peer server
     switch (t)
     {
+        case REGISTER_CONFIRM:
+        {
+            // Continue buffering til received full register confirm message
+            finish_buffering(sock, server, sizeof(RegisterConfirmMsg));
+            RegisterConfirmMsg parsed;
+            parse_register_confirm_msg(sock.buffer, parsed);
+
+            this->ack_registered_file(
+                parsed.file_name, parsed.file_size, 
+                parsed.index_ip, parsed.index_portno
+            );
+
+            // Socket clean-up
+            this->close_and_reset_sock(server, sock);
+            break;
+        }
         case REQ_FILE:
         {
             // Continue buffering until received full req_file message
@@ -216,6 +232,60 @@ void Peer::close_and_reset_sock(TCP_Select_Server &server, SockData &sock)
 /*===========================================================================
  * Request specific function definitions
  *==========================================================================*/
+void Peer::ack_registered_file(std::string file_name, int file_sz, 
+                                    std::string idx_ip, int idx_portno)
+{
+    TCP_Client peer_client = TCP_Client();
+    peer_client.connect_to_server(idx_ip, idx_portno);
+    std::ifstream registered_file(file_name, std::ios::binary);
+    try
+    {
+        if (registered_file)
+        {
+            // Get file size and compare to provided value
+            registered_file.seekg(0, registered_file.end);
+            int file_size = registered_file.tellg();
+            registered_file.seekg(0, registered_file.beg);
+
+            if (file_sz != file_size)
+            {
+                ErrFileNotFoundMsg *m = create_err_file_not_found_msg();
+                peer_client.write_to_sock((char *)m, sizeof(ErrFileNotFoundMsg));
+                delete m;
+                peer_client.close_sock();
+                return;
+            }
+
+            // Get file SHA-256 hash
+            std::vector<char> vec(picosha2::k_digest_size);
+            std::string file_hash;
+            picosha2::hash256(registered_file, vec.begin(), vec.end());
+            picosha2::hash256_hex_string(vec, file_hash);
+
+            // Generate register ack message and send to index server
+            RegisterAckMsg *msg = create_register_ack_msg(
+                file_size, file_name, ip, portno, file_hash
+            );
+            peer_client.write_to_sock((char *)msg, sizeof(RegisterAckMsg));
+            peer_client.close_sock();
+            delete msg;
+
+            // File clean-up
+            registered_file.close();
+        }
+        else
+        {
+            ErrFileNotFoundMsg *m = create_err_file_not_found_msg();
+            peer_client.write_to_sock((char *)m, sizeof(ErrFileNotFoundMsg));
+            delete m;
+            peer_client.close_sock();
+        }
+    }
+    catch (TCP_Exceptions exception)
+    {
+        (void) exception;
+    }
+}
 
 /**
  * Register file to index server. This peer will become a seeder for this 
@@ -223,7 +293,6 @@ void Peer::close_and_reset_sock(TCP_Select_Server &server, SockData &sock)
  * @param file_name Name of file being registered
  * @returns void
  */
-
 void Peer::register_file(std::string file_name)
 {
     TCP_Client peer_client = TCP_Client();
@@ -257,6 +326,7 @@ void Peer::register_file(std::string file_name)
         }
         else
         {
+            std::cerr << "ERR: File '" << file_name << "' does not exist!\n";
             peer_client.close_sock();
         }
     }
@@ -453,7 +523,7 @@ void Peer::add_file_segment(DataMsg &msg)
     // Handle case when there are more than one segments for entire file
     // Initial insertion to data segment table for provided key
     auto it = segments_table.find(key);
-    if (segments_table.find(key) == segments_table.end())
+    if (it == segments_table.end())
     {
         char *file_ptr = new char[msg.file_size];
         assert(file_ptr);
