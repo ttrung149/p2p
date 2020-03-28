@@ -3,8 +3,8 @@
  *
  *  File name: index-driver.cpp
  *
- *  Description: Main driver for Inde node. 
- *  Usage: ./peer
+ *  Description: Main driver for Index node. 
+ *  Usage: ./index <port number>
  * 
  *==========================================================================*/
 #include <fstream>
@@ -37,8 +37,12 @@ void prompt(int signum) {
             std::cout << "Exiting.." << std::endl;
             exit(signum);
         }
-        else if (prompt == "req" || prompt == "request")
+        else if (prompt == "query")
         {
+            std::cout << "Enter query file name: ";
+            std::string file_name;
+            std::cin >> file_name; 
+            idx.query_file(file_name);
             break;
         }
         else
@@ -51,9 +55,17 @@ void prompt(int signum) {
     std::cout << "Back to server loop.." << std::endl;
 }
 
-int main() {
+/* Index driver */
+int main(int argc,char* argv[]) {
+    if (argc != 2)
+    {
+        std::cerr << "Usage: ./index <port number>\n";
+        exit(EXIT_FAILURE);
+    }
     signal(SIGINT, prompt);
-    idx.start_server(9065);
+    std::cout << "\n======================================================"
+              << "\nStarting index server at port " << argv[1] << "\n";
+    idx.start_server(atoi(argv[1]));
 
     return 0;
 }

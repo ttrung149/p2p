@@ -207,6 +207,29 @@ void Index::close_and_reset_sock(TCP_Select_Server &server, SockData &sock)
  * Request specific function definitions
  *==========================================================================*/
 /**
+ * Allows index server to query file in file entry table for monitoring
+ * @param file_name file being querried
+ * @returns void
+ */
+void Index::query_file(std::string file_name)
+{
+    auto it = file_entry_table.find(file_name);
+    if (it == file_entry_table.end())
+    {
+        std::cerr << "File '" << file_name << "' not found!\n";
+    }
+    else
+    {
+        std::cout << "File hash: " << std::string(it->second.file_hash) 
+                  << "\nSeeder addrs: \n";
+        for (auto &addr : it->second.seeders_addr)
+        {
+            std::cout << "> " << addr.first << ":" << addr.second << "\n";
+        }
+    }
+}
+
+/**
  * Send confirmation message to confirm whether file being registered exists.
  * File information received through RegisterMsg is store in pending file 
  * entry table.
