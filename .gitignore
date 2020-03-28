@@ -36,7 +36,7 @@
 *.app
 peer
 index
-tests_
+test_*
 
 # Downloaded files
 files/*:*@*
