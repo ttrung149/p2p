@@ -35,7 +35,7 @@ RegisterMsg *create_register_msg(int file_sz, std::string file_name,
     strncpy(msg->seeder_ip, ip.data(), 16);
     msg->seeder_portno = (unsigned short) htons(port);
     bzero(msg->file_hash, 64);
-    strncpy(msg->file_hash, hash.data(), 64);
+    memcpy(msg->file_hash, hash.data(), 64);
 
     return msg;
 }
@@ -90,7 +90,33 @@ RegisterAckMsg *create_register_ack_msg(int file_sz, std::string file_name,
     strncpy(msg->seeder_ip, ip.data(), 16);
     msg->seeder_portno = (unsigned short) htons(port);
     bzero(msg->file_hash, 64);
-    strncpy(msg->file_hash, hash.data(), 64);
+    memcpy(msg->file_hash, hash.data(), 64);
+
+    return msg;
+}
+
+/**
+ * Create file found message 
+ * @param file_name name of file found
+ * @param seeder_ip seeder IP address
+ * @param seeder_portno seeder port
+ * @param hash SHA-256 hash of file found
+ * @returns Pointer to newly allocated FileFoundMsg struct
+ */
+FileFoundMsg *create_file_found_msg(std::string file_name, 
+        std::string seeder_ip, unsigned short seeder_portno, std::string hash)
+{
+    FileFoundMsg *msg = new FileFoundMsg();
+    assert(msg);
+
+    msg->type = (unsigned short) htons(FILE_FOUND);
+    bzero(msg->file_name, 20);
+    strncpy(msg->file_name, file_name.data(), 20);  
+    bzero(msg->seeder_ip, 16);
+    strncpy(msg->seeder_ip, seeder_ip.data(), 16);
+    msg->seeder_portno = (unsigned short) htons(seeder_portno);
+    bzero(msg->file_hash, 64);
+    memcpy(msg->file_hash, hash.data(), 64);
 
     return msg;
 }
@@ -194,7 +220,7 @@ void parse_register_msg(char buffer[], RegisterMsg &msg)
     memcpy(portno_buffer, buffer + 42, 2);
     msg.seeder_portno = ntohs(*(unsigned short *)(portno_buffer));
 
-    strncpy(msg.file_hash, buffer + 44, 64);
+    memcpy(msg.file_hash, buffer + 44, 64);
 
     #ifdef DEBUG_MESSAGE
     std::cout << "\n======================================"
@@ -270,7 +296,7 @@ void parse_register_ack_msg(char buffer[], RegisterAckMsg &msg)
     memcpy(portno_buffer, buffer + 42, 2);
     msg.seeder_portno = ntohs(*(unsigned short *)(portno_buffer));
 
-    strncpy(msg.file_hash, buffer + 44, 64);
+    memcpy(msg.file_hash, buffer + 44, 64);
 
     #ifdef DEBUG_MESSAGE
     std::cout << "\n======================================"
@@ -278,6 +304,41 @@ void parse_register_ack_msg(char buffer[], RegisterAckMsg &msg)
               << "\n======================================"
               << "\nType: "         << msg.type
               << "\nFile size: "    << msg.file_size
+              << "\nFile name "     << msg.file_name
+              << "\nSeeder IP: "    << msg.seeder_ip
+              << "\nSeeder port: "  << msg.seeder_portno
+              << "\nFile hash: "    << msg.file_hash << std::endl;
+    #endif
+}
+
+/**
+ * Parse file found message 
+ * @param[in] buffer Buffer array containg file found message. Buffer size 
+ * must be bigger than or equal to the size of FileFoundMsg struct.
+ * @param[out] msg Passed-by-reference value of FileFoundMsg struct. The buffer
+ * will be parsed and populated in this struct.
+ * @returns void
+ */
+void parse_file_found_msg(char buffer[], FileFoundMsg &msg) 
+{
+    char type_buffer[2];
+    memcpy(type_buffer, buffer, 2);
+    msg.type = (message_type) ntohs(*(unsigned short *)(type_buffer));
+
+    strncpy(msg.file_name, buffer + 2, 20);
+    strncpy(msg.seeder_ip, buffer + 22, 16);
+
+    char portno_buffer[2];
+    memcpy(portno_buffer, buffer + 38, 2);
+    msg.seeder_portno = ntohs(*(unsigned short *)(portno_buffer));
+
+    memcpy(msg.file_hash, buffer + 40, 64);
+
+    #ifdef DEBUG_MESSAGE
+    std::cout << "\n======================================"
+              << "\n\tParsing FILE_FOUND"
+              << "\n======================================"
+              << "\nType: "         << msg.type
               << "\nFile name "     << msg.file_name
               << "\nSeeder IP: "    << msg.seeder_ip
               << "\nSeeder port: "  << msg.seeder_portno

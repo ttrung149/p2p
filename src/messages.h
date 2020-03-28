@@ -14,7 +14,7 @@
 #include <arpa/inet.h>
 
 /*===== Uncomment for debugging =====*/
-#define DEBUG_MESSAGE
+//#define DEBUG_MESSAGE
 /*===================================*/
 
 #ifdef DEBUG_MESSAGE
@@ -69,19 +69,13 @@ typedef struct __attribute__((__packed__)) register_ack_msg {
     char file_hash[64];
 } RegisterAckMsg;
 
-/* Request file from index server message */
-typedef struct __attribute__((__packed__)) req_idx_msg {
-    unsigned short type;
-    char file_name[20];
-    char leecher_ip[16];
-    unsigned short leecher_portno;
-} ReqIdxMsg;
-
 /* Index server response - found file message */
 typedef struct __attribute__((__packed__)) file_found_msg {
     unsigned short type;
+    char file_name[20];
     char seeder_ip[16];
     unsigned short seeder_portno;
+    char file_hash[64];
 } FileFoundMsg;
 
 /* Index server response - error file not found message */
@@ -131,7 +125,8 @@ RegisterConfirmMsg *create_reg_confirm_msg(int, std::string, std::string,
                                                 unsigned short);
 RegisterAckMsg *create_register_ack_msg(int, std::string, std::string, 
                                                 unsigned short, std::string);
-FileFoundMsg *create_file_found_msg(std::string, unsigned short);
+FileFoundMsg *create_file_found_msg(std::string, std::string, unsigned short,
+                                                std::string);
 ErrFileNotFoundMsg *create_err_file_not_found_msg();
 ReqFileMsg *create_reqfile_msg(std::string, std::string, unsigned short);
 

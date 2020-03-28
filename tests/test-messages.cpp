@@ -23,6 +23,13 @@ int main()
     parse_register_ack_msg((char *)ack_msg, parsed_ack);
     delete ack_msg;
 
+    FileFoundMsg *file_found = create_file_found_msg(
+        "file.txt", "localhost", 9065, 
+        "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde\0");
+    FileFoundMsg parsed_file_found;
+    parse_file_found_msg((char *)file_found, parsed_file_found);
+    delete file_found;
+
     ErrFileNotFoundMsg *err_msg = create_err_file_not_found_msg();
     ErrFileNotFoundMsg parsed_err;
     parse_err_file_not_found_msg((char *)err_msg, parsed_err);
