@@ -132,25 +132,43 @@ void Index::handle_incoming_reqs(TCP_Select_Server &server, SockData &sock)
     // Handle each incoming request to index server
     switch (t)
     {
-        case REGISTER:
+        case REQ_FILE:
         {
             // Continue buffering until received full req_file message
+            finish_buffering(sock, server, sizeof(ReqFileMsg));
+            ReqFileMsg parsed;
+            parse_reqfile_msg(sock.buffer, parsed);
+            this->send_seeder_info(parsed.leecher_ip, parsed.leecher_portno, 
+                                                            parsed.file_name);
+            
+            // Socket clean-up
+            this->close_and_reset_sock(server, sock);
+            break;
+        }
+        case REGISTER:
+        {
+            // Continue buffering until received full register message
             finish_buffering(sock, server, sizeof(RegisterMsg));
             RegisterMsg parsed;
             parse_register_msg(sock.buffer, parsed);
+
+            // Send confirmation to decide to accept or reject registered file
+            this->confirm_file(parsed);
 
             // Socket clean-up
             this->close_and_reset_sock(server, sock);
             break;
         }
-        case DATA:
+        case REGISTER_ACK:
         {
-            // Socket clean-up
-            this->close_and_reset_sock(server, sock);
-            break;
-        }
-        case ERR_FILE_NOT_FOUND:
-        {
+            // Continue buffering until received full register message
+            finish_buffering(sock, server, sizeof(RegisterAckMsg));
+            RegisterAckMsg parsed;
+            parse_register_ack_msg(sock.buffer, parsed);
+
+            // Update file entry table based on received ACK message
+            this->update_file_entry_table(parsed);
+
             // Socket clean-up
             this->close_and_reset_sock(server, sock);
             break;
@@ -183,4 +201,138 @@ void Index::close_and_reset_sock(TCP_Select_Server &server, SockData &sock)
     sock.sock_fd = 0;
     sock.bytes_read = 0;
     bzero(sock.buffer, TCP_BUF_SZ);
+}
+
+/*===========================================================================
+ * Request specific function definitions
+ *==========================================================================*/
+/**
+ * Send confirmation message to confirm whether file being registered exists.
+ * File information received through RegisterMsg is store in pending file 
+ * entry table.
+ * @param parsed Passed-by-reference RegisterMsg
+ * @returns void
+ */
+void Index::confirm_file(RegisterMsg &parsed)
+{
+    TCP_Client index_client = TCP_Client();
+    index_client.connect_to_server(parsed.seeder_ip, parsed.seeder_portno);
+    RegisterConfirmMsg *m = create_reg_confirm_msg(
+        parsed.file_size, std::string(parsed.file_name), ip, portno
+    );
+
+    // Add file to pending file table
+    std::string key = std::string(parsed.seeder_ip) + ":" + 
+                      std::to_string(parsed.seeder_portno) + "@" + 
+                      std::string(parsed.file_name);
+    memcpy(pending_file_table[key], parsed.file_hash, 64);
+
+    // Send register confirm message to client
+    index_client.write_to_sock((char *)m, sizeof(RegisterConfirmMsg));
+    delete m;
+    index_client.close_sock();
+}
+
+/**
+ * Update file entry table based on received RegisterAckMsg
+ * @param parsed Passed-by-reference RegisterAckMsg
+ * @returns void
+ */
+void Index::update_file_entry_table(RegisterAckMsg &parsed)
+{
+    // Move pending file entry to confirmed file table
+    std::string key = std::string(parsed.seeder_ip) + ":" +
+                      std::to_string(parsed.seeder_portno) + "@" +
+                      std::string(parsed.file_name);
+
+    // Find pending entry
+    auto pending_it = pending_file_table.find(key);
+    if (pending_it == pending_file_table.end())
+    {
+        std::cerr << "ERR: Failed to transfer file '" 
+                  << std::string(parsed.file_name)
+                  << "' from pending to confirmed file table\n";
+        return;
+    }
+
+    // Compare pending entry hash to received hash
+    if (memcmp(pending_it->second, parsed.file_hash, 64) == 0)
+    {
+        // First seeder added to file entry table
+        auto it = file_entry_table.find(std::string(parsed.file_name));
+        if (it == file_entry_table.end())
+        {
+            FileEntry e;
+            memcpy(e.file_hash, parsed.file_hash, 64);
+            e.seeders_addr.push_back(
+                std::pair<std::string, unsigned short> (
+                    std::string(parsed.seeder_ip),
+                    int(parsed.seeder_portno)
+                )
+            );
+            file_entry_table[std::string(parsed.file_name)] = e;
+        }
+        // More seeders added to file entry table
+        else
+        {      
+            it->second.seeders_addr.push_back(
+                std::pair<std::string, unsigned short> (
+                    std::string(parsed.seeder_ip),
+                    int(parsed.seeder_portno)
+                )
+            );
+        }
+        std::cout << "File '" << std::string(parsed.file_name)
+                  << "' is added to file table by seeder '"
+                  << std::string(parsed.seeder_ip) << ":" 
+                  << std::to_string(parsed.seeder_portno) << "'\n";
+    }
+    else
+    {
+        std::cerr << "ERR: Failed to transfer file '" 
+                    << std::string(parsed.file_name)
+                    << "' from pending to confirmed\n";
+        std::cerr << "Hint: Hash does not match\n";
+    }
+
+    pending_file_table.erase(key);
+}
+
+/**
+ * Send seeder info to peer node based on entries in file entry table
+ * @param leecher_ip IP address of leecher peer
+ * @param leecher_portno Port that leecher peer node is running on
+ * @param file_name Name of file being requested
+ * @returns void
+ */
+void Index::send_seeder_info(std::string leecher_ip, int leecher_portno,
+                                                    std::string file_name)
+{
+    TCP_Client index_client = TCP_Client();
+    auto it = file_entry_table.find(file_name);
+    if (it == file_entry_table.end())
+    {
+        index_client.connect_to_server(leecher_ip, leecher_portno);
+        ErrFileNotFoundMsg *m = create_err_file_not_found_msg();
+        index_client.write_to_sock((char *)m, sizeof(ErrFileNotFoundMsg));
+        delete m;
+    }
+    else
+    {
+        FileEntry e = it->second;
+
+        // Randomly select a seeder
+        srand(time(NULL));
+        int random_idx = rand() % e.seeders_addr.size();
+        index_client.connect_to_server(leecher_ip, leecher_portno);
+        FileFoundMsg *m = create_file_found_msg(
+            file_name, 
+            e.seeders_addr[random_idx].first,
+            e.seeders_addr[random_idx].second,
+            std::string(e.file_hash)
+        );
+        index_client.write_to_sock((char *)m, sizeof(FileFoundMsg));
+        delete m;
+    }
+    index_client.close_sock();
 }

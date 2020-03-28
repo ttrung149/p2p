@@ -10,6 +10,7 @@
  *==========================================================================*/
 #include <unordered_map>
 #include <utility>
+#include <time.h>
 #include "messages.h"
 #include "tcp.h"
 
@@ -17,8 +18,8 @@
 #define INDEX_H_
 
 typedef struct file_entry {
-    char file_hash[64];
-    std::vector<std::pair<char[16], unsigned short>> seeders_addr;
+    char file_hash[64] = {0};
+    std::vector<std::pair<std::string, unsigned short>> seeders_addr;
 } FileEntry;
 
 class Index 
@@ -30,14 +31,17 @@ class Index
         void close_and_reset_sock(TCP_Select_Server &, SockData &);
 
         /* Request specific functions */
-        void confirm_registered_file();
+        void query_file(std::string);
+        void confirm_file(RegisterMsg &);
+        void update_file_entry_table(RegisterAckMsg &);
         void confirm_report();
-        void send_seeder_peer_info();
+        void send_seeder_info(std::string, int, std::string);
 
     private:
         std::string ip;
         int portno;
         std::unordered_map<std::string, FileEntry> file_entry_table;
+        std::unordered_map<std::string, char[64]> pending_file_table;
 };
 
 #endif
