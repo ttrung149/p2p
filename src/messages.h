@@ -14,7 +14,7 @@
 #include <arpa/inet.h>
 
 /*===== Uncomment for debugging =====*/
-// #define DEBUG_MESSAGE
+#define DEBUG_MESSAGE
 /*===================================*/
 
 #ifdef DEBUG_MESSAGE
@@ -55,6 +55,8 @@ typedef struct __attribute__((__packed__)) register_confirm_msg {
     unsigned short type;
     unsigned int file_size;
     char file_name[20];
+    char index_ip[16];
+    unsigned short index_portno;
 } RegisterConfirmMsg;
 
 /* Register ACK message */
@@ -62,6 +64,8 @@ typedef struct __attribute__((__packed__)) register_ack_msg {
     unsigned short type;
     unsigned int file_size;
     char file_name[20];
+    char seeder_ip[16];
+    unsigned short seeder_portno;
     char file_hash[64];
 } RegisterAckMsg;
 
@@ -123,8 +127,10 @@ typedef struct __attribute__((__packed__)) data_msg {
 /* Creating messages */
 RegisterMsg *create_register_msg(int, std::string, std::string, unsigned short,
                                                 std::string);
-RegisterConfirmMsg *create_reg_confirm_msg(int, std::string);
-RegisterAckMsg *create_register_ack_msg(int, std::string, std::string);
+RegisterConfirmMsg *create_reg_confirm_msg(int, std::string, std::string, 
+                                                unsigned short);
+RegisterAckMsg *create_register_ack_msg(int, std::string, std::string, 
+                                                unsigned short, std::string);
 FileFoundMsg *create_file_found_msg(std::string, unsigned short);
 ErrFileNotFoundMsg *create_err_file_not_found_msg();
 ReqFileMsg *create_reqfile_msg(std::string, std::string, unsigned short);

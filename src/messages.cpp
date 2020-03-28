@@ -16,7 +16,7 @@
  * @param file_sz size of file being registered
  * @param file_name name of file being registered
  * @param ip seeder IP address
- * @param port seeder IP port
+ * @param port seeder port
  * @param hash SHA-256 hash of file being registered
  * @returns Pointer to newly allocated RegisterMsg struct
  */
@@ -27,6 +27,61 @@ RegisterMsg *create_register_msg(int file_sz, std::string file_name,
     assert(msg);
 
     msg->type = (unsigned short) htons(REGISTER);
+    msg->file_size = htonl(file_sz);
+
+    bzero(msg->file_name, 20);
+    strncpy(msg->file_name, file_name.data(), 20);  
+    bzero(msg->seeder_ip, 16);
+    strncpy(msg->seeder_ip, ip.data(), 16);
+    msg->seeder_portno = (unsigned short) htons(port);
+    bzero(msg->file_hash, 64);
+    strncpy(msg->file_hash, hash.data(), 64);
+
+    return msg;
+}
+
+/**
+ * Create register confirm 
+ * @param file_sz size of file being confirmed
+ * @param file_name name of file being confirmed
+ * @param idx_ip index server IP address
+ * @param idx_port index server port
+ * @returns Pointer to newly allocated RegisterConfirmMsg struct
+ */
+RegisterConfirmMsg *create_reg_confirm_msg(int file_sz, std::string file_name,
+                                std::string idx_ip, unsigned short idx_port)
+{
+    RegisterConfirmMsg *msg = new RegisterConfirmMsg();
+    assert(msg);
+
+    msg->type = (unsigned short) htons(REGISTER_CONFIRM);
+    msg->file_size = htonl(file_sz);
+
+    bzero(msg->file_name, 20);
+    strncpy(msg->file_name, file_name.data(), 20);
+    bzero(msg->index_ip, 16);
+    strncpy(msg->index_ip, idx_ip.data(), 16);
+    msg->index_portno = (unsigned short) htons(idx_port);
+
+    return msg;
+}
+
+/**
+ * Create register ack message 
+ * @param file_sz size of file being ACK
+ * @param file_name name of file being ACK
+ * @param ip seeder IP address
+ * @param port seeder port
+ * @param hash SHA-256 hash of file being ACK
+ * @returns Pointer to newly allocated RegisterAckMsg struct
+ */
+RegisterAckMsg *create_register_ack_msg(int file_sz, std::string file_name,
+                        std::string ip, unsigned short port, std::string hash)
+{
+    RegisterAckMsg *msg = new RegisterAckMsg();
+    assert(msg);
+
+    msg->type = (unsigned short) htons(REGISTER_ACK);
     msg->file_size = htonl(file_sz);
 
     bzero(msg->file_name, 20);
@@ -144,6 +199,82 @@ void parse_register_msg(char buffer[], RegisterMsg &msg)
     #ifdef DEBUG_MESSAGE
     std::cout << "\n======================================"
               << "\n\tParsing REGISTER_MSG"
+              << "\n======================================"
+              << "\nType: "         << msg.type
+              << "\nFile size: "    << msg.file_size
+              << "\nFile name "     << msg.file_name
+              << "\nSeeder IP: "    << msg.seeder_ip
+              << "\nSeeder port: "  << msg.seeder_portno
+              << "\nFile hash: "    << msg.file_hash << std::endl;
+    #endif
+}
+
+/**
+ * Parse register confirm message 
+ * @param[in] buffer Buffer array containg register message. Buffer size 
+ * must be bigger than or equal to the size of RegisterConfirmMsg struct.
+ * @param[out] msg Passed-by-reference value of RegisterConfirmMsg struct. 
+ * The buffer will be parsed and populated in this struct.
+ * @returns void
+ */
+void parse_register_confirm_msg(char buffer[], RegisterConfirmMsg &msg)
+{
+    char type_buffer[2];
+    memcpy(type_buffer, buffer, 2);
+    msg.type = (message_type) ntohs(*(unsigned short *)(type_buffer));
+
+    char file_sz_buffer[4];
+    memcpy(file_sz_buffer, buffer + 2, 4);
+    msg.file_size = ntohl(*(unsigned int *)(file_sz_buffer));
+    strncpy(msg.file_name, buffer + 6, 20);
+    strncpy(msg.index_ip, buffer + 26, 16);
+
+    char portno_buffer[2];
+    memcpy(portno_buffer, buffer + 42, 2);
+    msg.index_portno = ntohs(*(unsigned short *)(portno_buffer));
+
+    #ifdef DEBUG_MESSAGE
+    std::cout << "\n======================================"
+              << "\n\tParsing REGISTER_CONFIRM"
+              << "\n======================================"
+              << "\nType: "         << msg.type
+              << "\nFile size: "    << msg.file_size
+              << "\nFile name: "    << msg.file_name
+              << "\nIndex IP: "     << msg.index_ip
+              << "\nIndex port: "   << msg.index_portno << std::endl;
+    #endif
+}
+
+/**
+ * Parse register ack message 
+ * @param[in] buffer Buffer array containg register message. Buffer size 
+ * must be bigger than or equal to the size of RegisterAckMsg struct.
+ * @param[out] msg Passed-by-reference value of RegisterAckMsg struct. 
+ * The buffer will be parsed and populated in this struct.
+ * @returns void
+ */
+void parse_register_ack_msg(char buffer[], RegisterAckMsg &msg) 
+{
+    char type_buffer[2];
+    memcpy(type_buffer, buffer, 2);
+    msg.type = (message_type) ntohs(*(unsigned short *)(type_buffer));
+
+    char file_sz_buffer[4];
+    memcpy(file_sz_buffer, buffer + 2, 4);
+    msg.file_size = ntohl(*(unsigned int *)(file_sz_buffer));
+
+    strncpy(msg.file_name, buffer + 6, 20);
+    strncpy(msg.seeder_ip, buffer + 26, 16);
+
+    char portno_buffer[2];
+    memcpy(portno_buffer, buffer + 42, 2);
+    msg.seeder_portno = ntohs(*(unsigned short *)(portno_buffer));
+
+    strncpy(msg.file_hash, buffer + 44, 64);
+
+    #ifdef DEBUG_MESSAGE
+    std::cout << "\n======================================"
+              << "\n\tParsing REGISTER_ACK"
               << "\n======================================"
               << "\nType: "         << msg.type
               << "\nFile size: "    << msg.file_size
