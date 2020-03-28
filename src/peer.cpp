@@ -92,7 +92,7 @@ void Peer::start_server(int port)
                 catch (TCP_Exceptions exception)
                 {
                     (void) exception;
-                   // Socket clean-up
+                    // Socket clean-up
                     this->close_and_reset_sock(server, socket);
                 }
             }
@@ -210,7 +210,7 @@ void Peer::handle_incoming_reqs(TCP_Select_Server &server, SockData &sock)
 
             std::cout << "Requesting file '" << parsed.file_name << "' from "
                       << parsed.seeder_ip << ":" << parsed.seeder_portno
-                      << std::endl;
+                      << "..\n";
             this->request_file_from_peer(
                 parsed.seeder_ip, parsed.seeder_portno, parsed.file_name
             );
@@ -535,7 +535,7 @@ void Peer::add_file_segment(DataMsg &msg)
         {
             downloaded.write(msg.data, msg.file_size);
             downloaded.close();
-            std::cout << "File '" << key << "' finished dowloading\n";
+            std::cout << "File '" << key << "' finished dowloading!\n";
 
             // Sign up as a seeder after finished downloading
             this->register_file(std::string(msg.file_name));
