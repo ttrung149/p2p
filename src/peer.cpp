@@ -156,6 +156,7 @@ void Peer::handle_incoming_reqs(TCP_Select_Server &server, SockData &sock)
             RegisterConfirmMsg parsed;
             parse_register_confirm_msg(sock.buffer, parsed);
 
+            // Acknowledge file being registered or reject it
             this->ack_registered_file(
                 parsed.file_name, parsed.file_size, 
                 parsed.index_ip, parsed.index_portno
@@ -202,7 +203,20 @@ void Peer::handle_incoming_reqs(TCP_Select_Server &server, SockData &sock)
         }
         case FILE_FOUND:
         {
-            std::cout << "file found\n";
+            // Continue buffering until received full data message
+            finish_buffering(sock, server, sizeof(FileFoundMsg));
+            FileFoundMsg parsed;
+            parse_file_found_msg(sock.buffer, parsed);
+
+            std::cout << "Requesting file '" << parsed.file_name << "' from "
+                      << parsed.seeder_ip << ":" << parsed.seeder_portno
+                      << std::endl;
+            this->request_file_from_peer(
+                parsed.seeder_ip, parsed.seeder_portno, parsed.file_name
+            );
+
+            // Socket clean-up
+            this->close_and_reset_sock(server, sock);
             break;
         }
         default:
@@ -232,6 +246,15 @@ void Peer::close_and_reset_sock(TCP_Select_Server &server, SockData &sock)
 /*===========================================================================
  * Request specific function definitions
  *==========================================================================*/
+/**
+ * Acknowlege or reject file being registered to index server. Only when the
+ * file is ACK'ed/confirmed will it be able to be downloaded be peers.
+ * @param file_name Name of file being registered
+ * @param file_size Size of file being registered
+ * @param idx_ip IP address of index server
+ * @param idx_portno Port that index server is running on
+ * @returns void
+ */
 void Peer::ack_registered_file(std::string file_name, int file_sz, 
                                     std::string idx_ip, int idx_portno)
 {
@@ -275,6 +298,7 @@ void Peer::ack_registered_file(std::string file_name, int file_sz,
         }
         else
         {
+            // Rejects file
             ErrFileNotFoundMsg *m = create_err_file_not_found_msg();
             peer_client.write_to_sock((char *)m, sizeof(ErrFileNotFoundMsg));
             delete m;
@@ -512,6 +536,9 @@ void Peer::add_file_segment(DataMsg &msg)
             downloaded.write(msg.data, msg.file_size);
             downloaded.close();
             std::cout << "File '" << key << "' finished dowloading\n";
+
+            // Sign up as a seeder after finished downloading
+            this->register_file(std::string(msg.file_name));
         }
         else
         {
@@ -559,6 +586,9 @@ void Peer::add_file_segment(DataMsg &msg)
                 downloaded.write(it->second.second, msg.file_size);
                 downloaded.close();
                 std::cout << "File '" << key << "' finished dowloading\n";
+
+                // Sign up as a seeder after finished downloading
+                this->register_file(std::string(msg.file_name));
             }
             else
             {
