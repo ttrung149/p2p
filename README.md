@@ -32,10 +32,13 @@ Available options:
 -----------------
 > q/quit        Quit peer node
 > req/request   Request file from index server
+> reg/register  Register file to index server
 > i/index       Update index server information
 ```
 
-To request file, select request option, and enter file to be requested. Succesful download will appear in `files/` folder.
+To register a file to index server, select `register` option, and enter file to be registered. The registered file will be confirmed by index server before being registered to the system, which can be further requested by other peers.
+
+To request file, select `request` option, and enter file to be requested. Succesful download will appear in `files/` folder.
 
 #### Index node
 To start an index node, run the following command:
@@ -55,7 +58,7 @@ Enter options: help
 
 Available options:
 -----------------
-> q/quit        Quit peer node
+> q/quit        Quit index node
 > query         Query file from entry table
 ```
 

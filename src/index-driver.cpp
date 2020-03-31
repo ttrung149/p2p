@@ -29,7 +29,11 @@ void prompt(int signum) {
     while (true) {
         if (prompt == "h" || prompt == "help")
         {
-            std::cout << "help" << std::endl;
+            std::cout << "\nAvailable options:"
+                      << "\n-----------------"
+                      << "\n> q/quit \tQuit index node"
+                      << "\n> query \tQuery file from entry table"
+                      << std::endl;
             break;
         }
         else if (prompt == "q" || prompt == "quit")

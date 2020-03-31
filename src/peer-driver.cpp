@@ -33,6 +33,7 @@ void prompt(int signum) {
                       << "\n-----------------"
                       << "\n> q/quit \tQuit peer node"
                       << "\n> req/request \tRequest file from index server"
+                      << "\n> reg/register \tRegister file to index server"
                       << "\n> i/index \tUpdate index server information"
                       << std::endl;
             break;
