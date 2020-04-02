@@ -1,0 +1,36 @@
+Baseline features
+-----------------
+1. Functional index server and peer nodes:
+    - Peer node and index server can handle multiple requests. (o)
+    - Peer nodes can register files to the index server.       (o)
+    - Peer nodes can download files from other peers.          (o)
+
+2. File integrity is not compromised:
+    - Index server reaches out to seeder peers to make sure that the file being 
+      registered exists before registering in the system.      (o)
+    - Peer nodes compare downloaded files to the original hash to ensure they
+      were not tampered.                                       (x)
+
+3. Reporting mechanism:
+    - Auto report to index server when seeder peer is down     (x)
+
+4. Logging tools                                               (x)
+5. Index server caching layer                                  (x)
+6. Clear design patterns
+    - Socket abstraction                                       (o)
+    - Formatted documentations, following C++ coding standards, etc.  (o)
+
+Above and beyonds
+-----------------
+1. Rate limiting features:
+    - Reward seeders with more bandwidth (need more research on 
+      how to implement)                                        (x)
+
+2. IP black-listing                                            (x)
+
+3. File segmentation:
+    - Divide seeder file into small message chunk              (o)
+    - Implement an algorithm (maybe randomized?) to select seeder 
+      peers for each chunk.                                    (x)
+
+
