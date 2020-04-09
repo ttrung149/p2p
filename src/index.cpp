@@ -297,7 +297,16 @@ void Index::update_file_entry_table(RegisterAckMsg &parsed)
         }
         // More seeders added to file entry table
         else
-        {      
+        {   
+            for (auto &seeder : it->second.seeders_addr)
+            {
+                if (seeder.first == std::string(parsed.seeder_ip)
+                    && seeder.second == int(parsed.seeder_portno))
+                {
+                    return;
+                }
+            }
+
             it->second.seeders_addr.push_back(
                 std::pair<std::string, unsigned short> (
                     std::string(parsed.seeder_ip),
